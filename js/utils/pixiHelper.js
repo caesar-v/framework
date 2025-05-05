@@ -24,33 +24,61 @@
         return null;
       }
 
-      // Default options
-      const defaultOptions = {
-        width: canvas.width,
-        height: canvas.height,
-        backgroundColor: 0x071d2a,
-        resolution: window.devicePixelRatio || 1,
-        view: canvas,
-        antialias: true
-      };
-      
-      // Merge with provided options
-      const appOptions = Object.assign({}, defaultOptions, options);
-      
       try {
-        // Create the PIXI application
-        const app = new PIXI.Application(appOptions);
-        
-        // Resize handler
-        const resizeHandler = () => {
-          if (!app || !canvas) return;
-          
-          // Update renderer size when canvas size changes
-          app.renderer.resize(canvas.width, canvas.height);
+        // Default options
+        const defaultOptions = {
+          width: canvas.width,
+          height: canvas.height,
+          backgroundColor: 0x071d2a,
+          view: canvas
         };
         
-        // Watch for canvas size changes
-        window.addEventListener('resize', resizeHandler);
+        // Merge with provided options
+        const appOptions = Object.assign({}, defaultOptions, options);
+        
+        let app;
+        
+        // Try to create the app using different PixiJS versions' syntax
+        try {
+          // Modern PIXI v5+ syntax
+          app = new PIXI.Application(appOptions);
+        } catch (modernError) {
+          console.warn('Modern PixiJS initialization failed, trying legacy approach:', modernError);
+          
+          try {
+            // Legacy PIXI v4 syntax (separate parameters)
+            app = new PIXI.Application(
+              canvas.width,
+              canvas.height,
+              { 
+                view: canvas, 
+                backgroundColor: appOptions.backgroundColor
+              }
+            );
+          } catch (legacyError) {
+            console.error('Legacy PixiJS initialization also failed:', legacyError);
+            return null;
+          }
+        }
+        
+        // Setup resize handler using a compatible approach
+        if (app && app.renderer) {
+          const resizeHandler = () => {
+            if (!app || !app.renderer || !canvas) return;
+            
+            try {
+              // Update renderer size when canvas size changes
+              if (typeof app.renderer.resize === 'function') {
+                app.renderer.resize(canvas.width, canvas.height);
+              }
+            } catch (e) {
+              console.warn('Error in resize handler:', e);
+            }
+          };
+          
+          // Watch for canvas size changes
+          window.addEventListener('resize', resizeHandler);
+        }
         
         return app;
       } catch (error) {
@@ -65,38 +93,110 @@
      * @param {Object} options - Options for the sprite (x, y, scale, etc.)
      * @returns {Promise<PIXI.Sprite>} - The sprite instance
      */
-    createSprite: async function(texturePath, options = {}) {
+    createSprite: function(texturePath, options = {}) {
       try {
-        // Load the texture
-        const texture = await PIXI.Assets.load(texturePath);
+        let sprite = null;
         
-        // Create the sprite
-        const sprite = new PIXI.Sprite(texture);
-        
-        // Apply options
-        if (options.x !== undefined) sprite.x = options.x;
-        if (options.y !== undefined) sprite.y = options.y;
-        if (options.scale !== undefined) {
-          sprite.scale.x = options.scale;
-          sprite.scale.y = options.scale;
+        // Check which texture loading method is available
+        if (PIXI.Assets && PIXI.Assets.load) {
+          // PIXI v7 approach
+          return PIXI.Assets.load(texturePath)
+            .then(texture => {
+              sprite = new PIXI.Sprite(texture);
+              this._applySpriteOptions(sprite, options);
+              return sprite;
+            })
+            .catch(error => {
+              console.error('Error loading texture with PIXI.Assets:', error);
+              return this._createFallbackSprite(options);
+            });
+        } else if (PIXI.Loader && PIXI.Loader.shared) {
+          // PIXI v5-v6 approach
+          return new Promise((resolve, reject) => {
+            PIXI.Loader.shared.add(texturePath).load((loader, resources) => {
+              try {
+                sprite = new PIXI.Sprite(resources[texturePath].texture);
+                this._applySpriteOptions(sprite, options);
+                resolve(sprite);
+              } catch (e) {
+                console.error('Error creating sprite with PIXI.Loader:', e);
+                resolve(this._createFallbackSprite(options));
+              }
+            });
+          });
+        } else if (PIXI.loader) {
+          // PIXI v4 approach
+          return new Promise((resolve, reject) => {
+            PIXI.loader.add(texturePath).load((loader, resources) => {
+              try {
+                sprite = new PIXI.Sprite(resources[texturePath].texture);
+                this._applySpriteOptions(sprite, options);
+                resolve(sprite);
+              } catch (e) {
+                console.error('Error creating sprite with PIXI.loader:', e);
+                resolve(this._createFallbackSprite(options));
+              }
+            });
+          });
         } else {
-          if (options.scaleX !== undefined) sprite.scale.x = options.scaleX;
-          if (options.scaleY !== undefined) sprite.scale.y = options.scaleY;
+          // Fallback: Create a placeholder sprite with a colored rectangle
+          console.warn('No texture loading method available, using fallback');
+          return Promise.resolve(this._createFallbackSprite(options));
         }
-        if (options.anchor !== undefined) {
-          sprite.anchor.set(options.anchor);
-        } else {
-          if (options.anchorX !== undefined) sprite.anchor.x = options.anchorX;
-          if (options.anchorY !== undefined) sprite.anchor.y = options.anchorY;
-        }
-        if (options.alpha !== undefined) sprite.alpha = options.alpha;
-        if (options.rotation !== undefined) sprite.rotation = options.rotation;
-        if (options.visible !== undefined) sprite.visible = options.visible;
-        if (options.tint !== undefined) sprite.tint = options.tint;
-        
-        return sprite;
       } catch (error) {
         console.error('PixiHelper.createSprite: Error creating sprite', error);
+        return Promise.resolve(this._createFallbackSprite(options));
+      }
+    },
+    
+    /**
+     * Apply common options to a sprite
+     * @private
+     */
+    _applySpriteOptions: function(sprite, options = {}) {
+      if (!sprite) return;
+      
+      if (options.x !== undefined) sprite.x = options.x;
+      if (options.y !== undefined) sprite.y = options.y;
+      if (options.scale !== undefined) {
+        sprite.scale.x = options.scale;
+        sprite.scale.y = options.scale;
+      } else {
+        if (options.scaleX !== undefined) sprite.scale.x = options.scaleX;
+        if (options.scaleY !== undefined) sprite.scale.y = options.scaleY;
+      }
+      if (options.anchor !== undefined) {
+        sprite.anchor.set(options.anchor);
+      } else {
+        if (options.anchorX !== undefined) sprite.anchor.x = options.anchorX;
+        if (options.anchorY !== undefined) sprite.anchor.y = options.anchorY;
+      }
+      if (options.alpha !== undefined) sprite.alpha = options.alpha;
+      if (options.rotation !== undefined) sprite.rotation = options.rotation;
+      if (options.visible !== undefined) sprite.visible = options.visible;
+      if (options.tint !== undefined) sprite.tint = options.tint;
+      
+      return sprite;
+    },
+    
+    /**
+     * Create a fallback sprite when texture loading fails
+     * @private
+     */
+    _createFallbackSprite: function(options = {}) {
+      try {
+        // Create a Graphics object instead of a Sprite
+        const graphics = new PIXI.Graphics();
+        graphics.beginFill(options.color || 0xFF0000);
+        graphics.drawRect(0, 0, options.width || 50, options.height || 50);
+        graphics.endFill();
+        
+        // Apply common options
+        this._applySpriteOptions(graphics, options);
+        
+        return graphics;
+      } catch (e) {
+        console.error('Failed to create fallback sprite:', e);
         return null;
       }
     },

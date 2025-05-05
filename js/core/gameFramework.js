@@ -402,29 +402,64 @@ class GameFramework {
       try {
         console.log('Initializing PixiJS application');
         
-        // Create Pixi application
-        this.pixiApp = PixiHelper.initApp(this.canvas, {
-          backgroundColor: this.getBackgroundColor(),
-          resolution: window.devicePixelRatio || 1,
-          autoDensity: true
-        });
+        // Verify PIXI is available and has required features
+        if (!window.PIXI || !window.PIXI.Application) {
+          console.warn('PIXI.js not available or incomplete, using Canvas2D fallback');
+          this.config.usePixi = false;
+          return;
+        }
         
-        // Create a container for all game elements
-        this.pixiContainer = PixiHelper.createContainer();
-        this.pixiApp.stage.addChild(this.pixiContainer);
+        // Create Pixi application with compatible options
+        const appOptions = {
+          view: this.canvas,
+          width: this.canvas.width,
+          height: this.canvas.height,
+          backgroundColor: this.getBackgroundColor() 
+        };
         
-        // Create a background container
-        this.pixiBackground = PixiHelper.createContainer();
-        this.pixiContainer.addChild(this.pixiBackground);
+        // Some versions use different parameters
+        try {
+          this.pixiApp = new PIXI.Application(appOptions);
+        } catch (err) {
+          console.warn('Error creating PIXI.Application with modern options, trying legacy options', err);
+          try {
+            // Try legacy initialization
+            this.pixiApp = new PIXI.Application(
+              this.canvas.width,
+              this.canvas.height,
+              { view: this.canvas, backgroundColor: this.getBackgroundColor() }
+            );
+          } catch (legacyErr) {
+            console.error('Failed to initialize PIXI with legacy options too, falling back to Canvas2D', legacyErr);
+            this.config.usePixi = false;
+            return;
+          }
+        }
         
-        // Create a foreground container for UI elements
-        this.pixiForeground = PixiHelper.createContainer();
-        this.pixiContainer.addChild(this.pixiForeground);
-        
-        console.log('PixiJS initialized successfully');
+        // Create containers for organization
+        try {
+          // Create a container for all game elements
+          this.pixiContainer = new PIXI.Container();
+          this.pixiApp.stage.addChild(this.pixiContainer);
+          
+          // Create a background container
+          this.pixiBackground = new PIXI.Container();
+          this.pixiContainer.addChild(this.pixiBackground);
+          
+          // Create a foreground container for UI elements
+          this.pixiForeground = new PIXI.Container();
+          this.pixiContainer.addChild(this.pixiForeground);
+          
+          console.log('PixiJS initialized successfully');
+        } catch (containerError) {
+          console.error('Error creating PIXI containers:', containerError);
+          this.config.usePixi = false;
+          this.pixiApp = null;
+        }
       } catch (error) {
         console.error('Failed to initialize PixiJS:', error);
         this.pixiApp = null;
+        this.config.usePixi = false;
       }
     }
     
@@ -473,31 +508,35 @@ class GameFramework {
         ? this.config.canvasBackground[this.state.theme]
         : ['#071824', '#071d2a']; // Default colors
         
-      // Convert hex to number
-      const color1 = parseInt(colors[0].replace('#', ''), 16);
-      const color2 = parseInt(colors[1].replace('#', ''), 16);
+      // Convert hex to number for the base color
+      const baseColor = parseInt(colors[0].replace('#', ''), 16);
       
-      // Create gradient background using a rectangle with fill gradient
+      // Create a simple colored background as fallback
       const background = new PIXI.Graphics();
       
-      // Create vertical or horizontal gradient based on layout
-      if (this.state.layout === 'pc') {
-        // Vertical gradient
-        background.beginTextureFill({
-          texture: this.createGradientTexture(color1, color2, false),
-          alpha: 1
-        });
-      } else {
-        // Horizontal gradient
-        background.beginTextureFill({
-          texture: this.createGradientTexture(color1, color2, true),
-          alpha: 1
-        });
-      }
-      
-      // Draw full-screen rectangle
+      // Use simple fill for compatibility with all PixiJS versions
+      background.beginFill(baseColor, 1);
       background.drawRect(0, 0, this.canvas.width, this.canvas.height);
       background.endFill();
+      
+      // Create gradient as a separate sprite for better compatibility
+      try {
+        // Create vertical or horizontal gradient based on layout
+        const gradientTexture = this.state.layout === 'pc' 
+          ? this.createGradientTexture(colors[0], colors[1], false)
+          : this.createGradientTexture(colors[0], colors[1], true);
+          
+        // Create sprite with gradient texture  
+        const gradientSprite = new PIXI.Sprite(gradientTexture);
+        gradientSprite.width = this.canvas.width;
+        gradientSprite.height = this.canvas.height;
+        
+        // Add to background container
+        this.pixiBackground.addChild(gradientSprite);
+      } catch (error) {
+        console.warn('Gradient background not supported in this PixiJS version, using solid color', error);
+        // Fallback is the solid background already added
+      }
       
       // Add to background container
       this.pixiBackground.addChild(background);
@@ -533,6 +572,8 @@ class GameFramework {
       const quality = 256;
       const canvas = document.createElement('canvas');
       
+      // For horizontal gradient, make a wide but not tall canvas
+      // For vertical gradient, make a tall but not wide canvas
       if (horizontal) {
         canvas.width = quality;
         canvas.height = 1;
@@ -547,18 +588,27 @@ class GameFramework {
       const gradient = horizontal 
         ? ctx.createLinearGradient(0, 0, quality, 0)
         : ctx.createLinearGradient(0, 0, 0, quality);
-        
-      // Convert numbers back to hex strings for canvas
-      const hex1 = '#' + color1.toString(16).padStart(6, '0');
-      const hex2 = '#' + color2.toString(16).padStart(6, '0');
       
-      gradient.addColorStop(0, hex1);
-      gradient.addColorStop(1, hex2);
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
       
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      return PIXI.Texture.from(canvas);
+      // Use the most compatible way to create a texture
+      try {
+        // Create base texture first
+        const baseTexture = PIXI.BaseTexture.from ? 
+          PIXI.BaseTexture.from(canvas) : 
+          new PIXI.BaseTexture(canvas);
+          
+        // Then create the texture
+        return new PIXI.Texture(baseTexture);
+      } catch (error) {
+        console.warn('Error creating gradient texture:', error);
+        // Return a simple colored base texture as fallback
+        return PIXI.Texture.WHITE;
+      }
     }
     
     /**
