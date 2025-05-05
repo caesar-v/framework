@@ -316,9 +316,30 @@
     box-shadow: var(--shadow-md);
   }
   
-  .balance-label {
+  .balance-value-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  
+  .wallet-label {
     font-size: var(--font-xs);
     color: var(--color-foreground-secondary);
+    margin-bottom: 2px;
+  }
+  
+  .gold-coin-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .gold-coin-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
   
   .balance-value {
@@ -333,7 +354,6 @@
   .currency-icon {
     color: var(--color-accent-gold);
     font-weight: bold;
-    /* Ready for icon replacement later */
     display: inline-flex;
     align-items: center;
     height: 20px;
@@ -686,14 +706,22 @@
     margin-bottom: var(--spacing-xs);
   }
   
+  .profit-value-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .gold-coin-icon.small {
+    width: 20px;
+    height: 20px;
+  }
+  
   .profit-value {
     font-size: var(--font-xl);
     font-weight: bold;
     color: var(--color-foreground);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
   }
   
   .play-mode-section {

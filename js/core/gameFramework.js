@@ -1598,15 +1598,15 @@ class GameFramework {
      * Update the potential win display
      */
     updatePotentialWin() {
-      this.elements.potentialWin.innerHTML = this.calculatePotentialWin().toFixed(2) + ` <span class="currency-icon">${this.config.currency}</span>`;
+      this.elements.potentialWin.textContent = this.calculatePotentialWin().toFixed(2);
     }
   
     /**
      * Update the balance display
      */
     updateBalance() {
-      // Format balance and add currency
-      this.elements.balanceDisplay.innerHTML = this.state.balance.toFixed(2) + ` <span class="currency-icon">${this.config.currency}</span>`;
+      // Format balance (currency icon is now in the HTML)
+      this.elements.balanceDisplay.textContent = this.state.balance.toFixed(2);
     }
   
     /**
