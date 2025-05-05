@@ -1086,6 +1086,12 @@
       flex-direction: column;
     }
     
+    /* Override grid layout for smaller screens */
+    .pc .game-content.chat-open {
+      display: flex;
+      flex-direction: column;
+    }
+    
     .pc .playground-zone {
       order: 1;
       height: 60vh;
@@ -1097,6 +1103,14 @@
       width: auto;
       margin: var(--spacing-md);
       margin-top: 0;
+    }
+    
+    .pc .chat-panel {
+      order: 3;
+      width: auto;
+      margin: var(--spacing-md);
+      margin-top: 0;
+      max-height: 300px; /* Limit height on smaller screens */
     }
   }
   
@@ -1319,22 +1333,29 @@
   
   /* Chat panel */
   .chat-panel {
-    position: absolute;
-    top: 0;
-    right: -350px; /* Start off-screen */
-    width: 350px;
+    flex: 0 0 0; /* Initial width is 0 */
+    max-width: 0; /* Start collapsed */
     height: 100%;
     background-color: var(--color-background); /* Match framework background */
     border-left: 1px solid var(--color-border); /* Match framework border */
-    z-index: 10;
     display: flex;
     flex-direction: column;
     box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
-    transition: right 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
+    overflow: hidden; /* Hide content when collapsed */
+    opacity: 0;
   }
   
   .chat-panel.active {
-    right: 0;
+    flex: 0 0 350px; /* Fixed width when active */
+    max-width: 350px;
+    opacity: 1;
+  }
+  
+  /* Apply specific styles when in grid layout */
+  .pc .game-content.chat-open .chat-panel.active {
+    flex: 1; /* Allow it to fill the grid area */
+    max-width: none; /* Remove max-width so it fills the grid area */
   }
   
   .chat-header {
@@ -1390,34 +1411,107 @@
     background-color: var(--color-panel); /* Match framework panel color */
   }
   
-  /* Adjust playground zone when chat is open */
-  .playground-zone.chat-open {
-    width: calc(100% - 350px);
-    transition: width 0.3s ease-in-out;
+  /* Configure game content as a three-column layout when chat is open */
+  
+  /* PC layout with three columns */
+  .pc .game-content {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* Apply grid layout when chat is open */
+  .pc .game-content.chat-open {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr) 350px;
+    grid-template-areas: "betting playground chat";
+    gap: var(--spacing-md);
+  }
+  
+  .pc .game-content.chat-open .betting-zone {
+    grid-area: betting;
+    margin: 0;
+    width: auto;
+  }
+  
+  .pc .game-content.chat-open .playground-zone {
+    grid-area: playground;
+    margin: 0;
+    flex: 1; /* Allow it to fill its grid area */
+    width: 100%;
+    height: 100%;
+  }
+  
+  .pc .game-content.chat-open .chat-panel {
+    grid-area: chat;
+    margin: 0;
+    max-width: 100%; /* Allow it to fill its grid area */
+    width: 100%;
+    flex: 1 1 auto; /* Allow it to grow and shrink */
+  }
+  
+  /* Adjust playground position instead of width */
+  .pc .playground-zone {
+    transition: all 0.3s ease-in-out;
+    flex: 1;
   }
   
   /* Mobile adjustments for chat */
   @media (max-width: 768px) {
-    .chat-panel {
-      width: 280px;
-      right: -280px;
+    .chat-panel.active {
+      flex: 0 0 280px;
+      max-width: 280px;
     }
     
-    .playground-zone.chat-open {
-      width: calc(100% - 280px);
+    /* On mobile, make the chat panel a third column but with column layout */
+    .mobile .game-content.chat-open {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .mobile .chat-panel {
+      flex: 0 0 0;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      order: 3; /* Place at the bottom */
+      height: 300px; /* Fixed height on mobile */
+    }
+    
+    .mobile .chat-panel.active {
+      flex: 0 0 300px;
+      max-width: 100%;
+      opacity: 1;
+      width: auto;
+      margin: var(--spacing-md);
+      margin-top: 0;
+    }
+    
+    .mobile .playground-zone.chat-open {
+      width: 100%;
     }
   }
   
-  /* Smaller screens - chat takes full width */
+  /* Smaller screens - chat panel responsiveness */
   @media (max-width: 480px) {
-    .chat-panel {
-      width: 100%;
-      right: -100%;
+    /* Override grid layout at very small screens */
+    .pc .game-content.chat-open {
+      display: flex;
+      flex-direction: column;
     }
     
-    .playground-zone.chat-open {
-      width: 0;
-      overflow: hidden;
+    /* Make chat panel take full width at the bottom */
+    .pc .chat-panel.active,
+    .mobile .chat-panel.active {
+      flex: 0 0 250px; /* Shorter on very small screens */
+      max-width: 100%;
+      width: auto;
+      margin: var(--spacing-md);
+      margin-top: 0;
+    }
+    
+    /* Make sure the playground has appropriate height */
+    .pc .playground-zone,
+    .mobile .playground-zone {
+      height: 40vh; /* Smaller playground on tiny screens */
     }
   }
   }

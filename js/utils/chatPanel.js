@@ -30,17 +30,19 @@ class ChatPanelManager {
       headerChat: document.querySelector(this.config.headerChatSelector),
       close: document.querySelector(this.config.closeSelector),
       playground: document.querySelector(this.config.playgroundSelector),
+      gameContent: document.querySelector('.game-content'),
       iframe: document.querySelector(this.config.iframeSelector)
     };
     
     // Initialize if all required elements are found
-    if (this.elements.panel && this.elements.playground && this.elements.headerChat) {
+    if (this.elements.panel && this.elements.playground && this.elements.headerChat && this.elements.gameContent) {
       this.init();
     } else {
       console.error('Chat panel could not be initialized. Missing elements:', 
         !this.elements.panel ? 'panel' : '',
         !this.elements.playground ? 'playground' : '',
-        !this.elements.headerChat ? 'header chat button' : '');
+        !this.elements.headerChat ? 'header chat button' : '',
+        !this.elements.gameContent ? 'game content' : '');
     }
   }
   
@@ -141,6 +143,11 @@ class ChatPanelManager {
       this.elements.playground.classList.add(this.config.chatOpenClass);
     }
     
+    // Add the chat-open class to the game-content for the three-column layout
+    if (this.elements.gameContent) {
+      this.elements.gameContent.classList.add(this.config.chatOpenClass);
+    }
+    
     // Update button states
     if (this.elements.headerChat) {
       this.elements.headerChat.classList.add(this.config.activeButtonClass);
@@ -170,6 +177,11 @@ class ChatPanelManager {
       this.elements.playground.classList.remove(this.config.chatOpenClass);
     }
     
+    // Remove the chat-open class from the game-content
+    if (this.elements.gameContent) {
+      this.elements.gameContent.classList.remove(this.config.chatOpenClass);
+    }
+    
     // Update button states
     if (this.elements.headerChat) {
       this.elements.headerChat.classList.remove(this.config.activeButtonClass);
@@ -185,14 +197,6 @@ class ChatPanelManager {
    * Handle window resize events
    */
   handleResize() {
-    // Adjust chat panel position and size if needed
-    if (this.isChatOpen && window.innerWidth < 768) {
-      // On smaller screens, may need additional adjustments
-      if (window.innerWidth < 480) {
-        // For very small screens, make extra adjustments
-      }
-    }
-    
     // Force a redraw of the game canvas to handle new dimensions
     if (window.gameLoader && window.gameLoader.activeGame && 
         window.gameLoader.activeGame.game && 
@@ -200,6 +204,23 @@ class ChatPanelManager {
       setTimeout(() => {
         window.gameLoader.activeGame.game.drawCanvas();
       }, 300); // Delay slightly to allow transition to complete
+    }
+    
+    // Update layout classes based on screen width
+    const gameContainer = document.querySelector('.game-container');
+    if (gameContainer) {
+      // Apply appropriate layout class based on screen width
+      if (window.innerWidth < 768) {
+        if (!gameContainer.classList.contains('mobile')) {
+          gameContainer.classList.remove('pc');
+          gameContainer.classList.add('mobile');
+        }
+      } else {
+        if (!gameContainer.classList.contains('pc')) {
+          gameContainer.classList.remove('mobile');
+          gameContainer.classList.add('pc');
+        }
+      }
     }
   }
   
