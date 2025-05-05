@@ -101,7 +101,6 @@
   
   html, body {
     height: 100%;
-    overflow: hidden;
   }
   
   body {
@@ -117,48 +116,81 @@
     margin: 0;
   }
   
+  /* PC has hidden overflow to prevent scrolling */
+  .pc body {
+    overflow: hidden;
+  }
+  
+  /* Mobile allows scrolling */
+  .mobile body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
   /* Outer container for controls */
   .outer-container {
     display: flex;
     flex-direction: column;
-    max-height: 100vh;
     width: 100vw;
+  }
+  
+  /* PC has fixed height container */
+  .pc .outer-container {
+    max-height: 100vh;
     overflow: hidden;
   }
   
-  /* Top controls bar */
-  .top-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fff;
-    padding: 10px 20px;
-    border-bottom: 1px solid #ddd;
-    z-index: 100;
+  /* Mobile has auto height container to allow scrolling */
+  .mobile .outer-container {
+    min-height: 100vh;
+    overflow-x: hidden;
   }
   
-  .layout-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .theme-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
+  /* Control elements - common styling */
   .control-label {
     font-weight: bold;
     white-space: nowrap;
+    color: var(--color-foreground-secondary);
+    margin-bottom: 5px;
+    display: block;
   }
   
   .control-select {
-    padding: 6px 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-input);
+    color: var(--color-foreground);
     font-family: var(--font-primary);
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  /* Settings sections */
+  .layout-controls,
+  .theme-controls,
+  .game-selector-controls,
+  .screen-info {
+    margin-bottom: 15px;
+  }
+  
+  /* Screen information in settings panel */
+  .screen-info {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background-color: var(--color-input);
+    border-radius: var(--radius-sm);
+    margin-bottom: 15px;
+    border: 1px solid var(--color-border);
+  }
+  
+  .info-display {
+    font-family: var(--font-primary);
+    font-size: var(--font-base);
+    color: var(--color-accent);
+    padding: 6px 0;
+    font-weight: bold;
   }
   
   /* Layout toggle */
@@ -211,8 +243,6 @@
   .game-container {
     position: relative;
     margin: 0 auto;
-    max-width: 100%;
-    max-height: 100%;
     background-color: var(--color-background);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
@@ -223,17 +253,18 @@
   
   /* PC layout */
   .game-container.pc {
-    aspect-ratio: 16/9;
-    width: 100%;
-    max-width: 1920px;
-    height: auto;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   
   /* Mobile layout */
   .game-container.mobile {
-    aspect-ratio: 9/16;
-    height: calc(100vh - 60px); /* Subtract top controls height */
-    width: auto;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100%;
+    max-height: 100%;
   }
   
   /* Game header */
@@ -244,7 +275,15 @@
     padding: var(--spacing-md);
     background-color: var(--color-background-secondary);
     box-shadow: var(--shadow-sm);
-    z-index: 1;
+    z-index: 10;
+  }
+  
+  /* Mobile fixed header */
+  .mobile .header {
+    position: sticky;
+    /* Header positioned below the top controls */
+    top: 50px; /* Approximate height of top controls */
+    width: 100%;
   }
   
   .game-title {
@@ -328,13 +367,25 @@
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: var(--radius-lg);
     margin: var(--spacing-md);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box; /* Include padding in width/height calculation */
   }
   
   /* Canvas styles */
   canvas {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 100% !important; /* Force width to 100% of container */
+    height: 100% !important; /* Force height to 100% of container */
+    object-fit: fill; /* Fill the entire space */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none !important; /* Override any max-width */
+    max-height: none !important; /* Override any max-height */
   }
   
   /* Betting zone - contains all betting and control elements */
@@ -373,13 +424,16 @@
   /* Mobile Layout (9:16) - Playground on top, betting zone at bottom */
   .mobile .game-content {
     flex-direction: column;
+    min-height: unset; /* Allow content to determine height */
+    overflow: visible; /* Allow content to flow outside */
   }
   
   .mobile .playground-zone {
     order: 1; /* Playground on top */
-    flex: 1;
+    flex: 0 0 auto; /* Don't allow flex grow/shrink */
     margin-bottom: 0;
-    height: 60vh; /* Set height to about 60% of viewport height */
+    height: 70vh; /* Set height to about 70% of viewport height */
+    min-height: 300px; /* Enforce a minimum height */
   }
   
   .mobile .betting-zone {
@@ -388,6 +442,7 @@
     margin-top: 0;
     width: auto;
     max-height: none;
+    flex: 0 0 auto; /* Don't allow flex grow/shrink */
   }
   
   /* Control panels */
@@ -684,6 +739,110 @@
     font-size: var(--font-xs);
   }
   
+  /* Settings Panel */
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Start offscreen */
+    width: 350px;
+    height: 100vh;
+    background-color: var(--color-background);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .settings-panel.active {
+    right: 0;
+  }
+  
+  .settings-header {
+    padding: var(--spacing-md);
+    background-color: var(--color-background-secondary);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .settings-title {
+    font-family: var(--font-display);
+    font-size: var(--font-xl);
+    font-weight: bold;
+    color: var(--color-foreground);
+    margin: 0;
+  }
+  
+  .settings-close {
+    background-color: transparent;
+    color: var(--color-foreground);
+    border: none;
+    font-size: var(--font-xl);
+    font-weight: bold;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .settings-content {
+    padding: var(--spacing-md);
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .settings-section {
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .settings-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+  
+  .settings-section-title {
+    font-family: var(--font-display);
+    font-size: var(--font-lg);
+    color: var(--color-accent);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  /* Update the layout toggle and controls for better appearance in settings panel */
+  .settings-panel .layout-toggle {
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  .settings-panel .debug-controls,
+  .settings-panel .test-controls {
+    margin-bottom: 15px;
+  }
+  
+  .settings-panel .debug-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .settings-panel .toggle-switch-wrapper {
+    margin: 5px 0;
+  }
+  
+  .settings-panel .btn {
+    width: 100%;
+    margin-top: 5px;
+  }
+  
   /* Popup Menu */
   .overlay {
     position: fixed;
@@ -817,12 +976,15 @@
     position: absolute;
     bottom: 10px;
     right: 10px;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: var(--color-foreground-secondary);
-    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: var(--color-accent);
+    padding: 6px 10px;
     border-radius: var(--radius-sm);
-    font-size: var(--font-xs);
+    font-size: var(--font-sm);
     z-index: 10;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-accent);
   }
   
   /* Play controls section */

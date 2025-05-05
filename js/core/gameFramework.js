@@ -453,6 +453,10 @@ class GameFramework {
           
           // Update canvas size
           const targetDims = this.config.canvasDimensions[this.state.layout];
+          
+          // Force canvas to fill the entire playground zone
+          this.canvas.style.width = '100%';
+          this.canvas.style.height = '100%';
           this.canvas.width = targetDims.width;
           this.canvas.height = targetDims.height;
           
@@ -500,6 +504,9 @@ class GameFramework {
                 // Use debounce to avoid too many updates
                 this._resizeTimeoutObserver = setTimeout(() => {
                   // Update canvas dimensions
+                  // Force canvas to fill the entire playground zone
+                  this.canvas.style.width = '100%';
+                  this.canvas.style.height = '100%';
                   this.canvas.width = playgroundWidth;
                   this.canvas.height = playgroundHeight;
                   
@@ -578,6 +585,10 @@ class GameFramework {
       
       // Set canvas dimensions based on current layout and playground size
       const targetDims = this.config.canvasDimensions[this.state.layout];
+      
+      // Force canvas to fill the entire playground zone (ensure pixel-perfect sizing)
+      this.canvas.style.width = '100%';
+      this.canvas.style.height = '100%';
       this.canvas.width = targetDims.width;
       this.canvas.height = targetDims.height;
       
@@ -1379,15 +1390,19 @@ class GameFramework {
      * Draw using the Canvas 2D API (original implementation)
      */
     drawWithCanvas2D() {
+      // Get the current canvas dimensions
+      const width = this.canvas.width;
+      const height = this.canvas.height;
+      
       // Clear canvas - IMPORTANT: Use full canvas dimensions
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.clearRect(0, 0, width, height);
       
       // Create gradient based on theme and layout
       let gradient;
       if (this.state.layout === 'pc') {
-        gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient = this.ctx.createLinearGradient(0, 0, 0, height);
       } else {
-        gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, 0);
+        gradient = this.ctx.createLinearGradient(0, 0, width, 0);
       }
       
       // Set colors based on theme with safety check
@@ -1400,7 +1415,7 @@ class GameFramework {
       
       // Fill background with gradient - use full canvas size
       this.ctx.fillStyle = gradient;
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillRect(0, 0, width, height);
       
       // Draw reference grid if in debug mode
       if (window.debugManager && window.debugManager.isDebugEnabled) {
@@ -1842,6 +1857,17 @@ class GameFramework {
     defaultRenderGame(ctx, width, height, state) {
       const centerX = width / 2;
       const centerY = height / 2;
+      
+      // Fill the entire canvas with a gradient background
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      const colors = this.config.canvasBackground[this.state.theme] || ['#071824', '#071d2a'];
+      gradient.addColorStop(0, colors[0]);
+      gradient.addColorStop(1, colors[1]);
+      
+      // Clear and fill the entire canvas
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
       
       // Draw center marker
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
