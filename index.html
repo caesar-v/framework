@@ -10,50 +10,7 @@
 </head>
 <body>
   <div class="outer-container">
-    <div class="top-controls">
-      <div class="layout-controls">
-        <span class="control-label">Layout:</span>
-        <div class="layout-toggle">
-          <input type="radio" name="layout" id="desktop" checked>
-          <label for="desktop">PC (1920×1080)</label>
-          <input type="radio" name="layout" id="mobile">
-          <label for="mobile">Mobile (1080×1920)</label>
-          <span class="toggle-indicator"></span>
-        </div>
-      </div>
-    <div class="game-selector-controls">
-        <label class="control-label" for="game-select">Game:</label>
-        <select id="game-select" class="control-select">
-            <option value="dice">Dice Game</option>
-            <option value="card">Card Game</option>
-        </select>
-    </div>
-      
-      <div class="theme-controls">
-        <label class="control-label" for="theme-select">Theme:</label>
-        <select id="theme-select" class="control-select">
-          <option value="default">Dark Theme</option>
-          <option value="pirate">Pirate Theme</option>
-          <option value="neon">Neon Theme</option>
-          <option value="classic">Classic Casino</option>
-        </select>
-      </div>
-      
-      <div class="debug-controls">
-        <span class="control-label">Debug:</span>
-        <div class="toggle-switch-wrapper">
-          <label class="toggle-switch">
-            <input type="checkbox" id="debug-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <button id="debug-button" class="btn btn-outline">🐛 Analyze</button>
-      </div>
-      
-      <div class="test-controls">
-        <button id="autotest-button" class="btn btn-outline">Run Tests</button>
-      </div>
-    </div>
+    <!-- Removed top controls bar, moved to settings panel -->
     
     <div id="game-container" class="game-container pc">
       <header class="header">
@@ -65,7 +22,8 @@
           </div>
           <div class="header-controls">
             <button class="control-button active" id="sound-button" title="Toggle Sound">🔊</button>
-            <button class="control-button" id="menu-button" title="Game Menu">⚙️</button>
+            <button class="control-button" id="menu-button" title="Game Menu">ℹ️</button>
+            <button class="control-button" id="settings-button" title="Game Settings">⚙️</button>
           </div>
         </div>
       </header>
@@ -76,7 +34,6 @@
         <!-- Playground Zone - Contains the game canvas -->
         <div class="playground-zone">
           <canvas id="game-canvas"></canvas>
-          <div class="dimensions-display" id="dimensions-display">1920×1080</div>
         </div>
         
         <!-- Betting Zone - Contains all betting controls and game actions -->
@@ -138,6 +95,76 @@
         <div id="current-time">00:00:00</div>
         <div>Game Prototype Framework</div>
       </footer>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settings-panel">
+      <div class="settings-header">
+        <h2 class="settings-title">Game Settings</h2>
+        <button class="settings-close" id="close-settings">×</button>
+      </div>
+      <div class="settings-content">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Game</h3>
+          <div class="game-selector-controls">
+            <label class="control-label" for="game-select">Select Game:</label>
+            <select id="game-select" class="control-select">
+              <option value="dice">Dice Game</option>
+              <option value="card">Card Game</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Display</h3>
+          
+          <div class="screen-info">
+            <span class="control-label">Screen Resolution:</span>
+            <div class="info-display" id="settings-screen-resolution">1920×1080</div>
+            <div class="info-display" id="settings-window-size">Window: 1920×1080</div>
+            <div class="info-display" id="settings-canvas-size">Canvas: 1920×1080</div>
+          </div>
+          
+          <div class="layout-controls">
+            <span class="control-label">Layout:</span>
+            <div class="layout-toggle">
+              <input type="radio" name="layout" id="desktop" checked>
+              <label for="desktop">PC (16:9)</label>
+              <input type="radio" name="layout" id="mobile">
+              <label for="mobile">Mobile (9:16)</label>
+              <span class="toggle-indicator"></span>
+            </div>
+          </div>
+          
+          <div class="theme-controls">
+            <label class="control-label" for="theme-select">Theme:</label>
+            <select id="theme-select" class="control-select">
+              <option value="default">Dark Theme</option>
+              <option value="pirate">Pirate Theme</option>
+              <option value="neon">Neon Theme</option>
+              <option value="classic">Classic Casino</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3 class="settings-section-title">Development</h3>
+          <div class="debug-controls">
+            <span class="control-label">Debug Mode:</span>
+            <div class="toggle-switch-wrapper">
+              <label class="toggle-switch">
+                <input type="checkbox" id="debug-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <button id="debug-button" class="btn btn-outline">🐛 Analyze</button>
+          </div>
+          
+          <div class="test-controls">
+            <button id="autotest-button" class="btn btn-outline">Run Tests</button>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- Popup Menu -->
@@ -202,7 +229,47 @@
   </div>
   
   <!-- External libraries -->
+  <!-- Try using the regular PIXI version instead of 8.0.2 which has WebGL initialization issues -->
   <script src="js/lib/pixi.min.js"></script>
+  <!-- PIXI.js initialization -->
+  <script>
+    /**
+     * IMPORTANT: PIXI is disabled by default in this version.
+     * The current PIXI version available in this project has compatibility issues with 
+     * either WebGL or the CanvasRenderer implementation. Games will use Canvas2D rendering
+     * by default for better compatibility.
+     * 
+     * If you want to enable PIXI in specific games:
+     * 1. Create a custom game class
+     * 2. Set config.usePixi = true in your game constructor
+     * 3. Implement a renderGameWithPixi method that handles PIXI rendering
+     */
+     
+    // Set up PIXI load detection (for debug purposes)
+    window.addEventListener('load', function() {
+      if (window.PIXI) {
+        console.log('PIXI.js loaded but NOT USED by default, version:', window.PIXI.VERSION || 'unknown');
+        console.log('PIXI is disabled by default due to compatibility issues');
+        
+        // Log available renderers (for diagnosis)
+        if (window.PIXI.autoDetectRenderer) {
+          console.log('PIXI can use autoDetectRenderer');
+        }
+        if (window.PIXI.CanvasRenderer) {
+          console.log('PIXI CanvasRenderer is available');
+        }
+        if (window.PIXI.Renderer) {
+          console.log('PIXI Renderer (WebGL) is available');
+        }
+        
+        // Notify system that PIXI is loaded but we'll still use Canvas2D by default
+        window.dispatchEvent(new CustomEvent('pixiloaded'));
+      } else {
+        console.warn('PIXI.js failed to load, using Canvas2D rendering');
+        window.dispatchEvent(new CustomEvent('pixifailed'));
+      }
+    });
+  </script>
   
   <!-- Load core framework scripts in the correct order -->
   <script src="js/config.js"></script>
