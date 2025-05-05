@@ -24,7 +24,6 @@
     <div class="game-selector-controls">
         <label class="control-label" for="game-select">Game:</label>
         <select id="game-select" class="control-select">
-            <option value="slot">Slot Game</option>
             <option value="dice">Dice Game</option>
             <option value="card">Card Game</option>
         </select>
@@ -216,7 +215,6 @@
   </script>
   
   <!-- Game implementations - depends on BaseGame -->
-  <script src="games/slotGame.js"></script>
   <script src="games/diceGame.js"></script>
   <script src="games/cardGame.js"></script>
   
@@ -251,7 +249,6 @@
       console.log("Available game classes:", {
         GameFramework: typeof GameFramework !== 'undefined',
         BaseGame: typeof BaseGame !== 'undefined',
-        SlotGame: typeof SlotGame !== 'undefined',
         DiceGame: typeof DiceGame !== 'undefined',
         CardGame: typeof CardGame !== 'undefined'
       });

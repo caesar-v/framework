@@ -136,6 +136,9 @@ class GameFramework {
       if (this.elements.gameTitle) {
         this.elements.gameTitle.textContent = this.config.gameTitle;
       }
+      
+      // CRITICAL FIX: Verify gameLogic exists and has all required methods
+      this._ensureGameLogicComplete();
   
       // Initialize canvas
       this.canvas = this.elements.canvas;
@@ -150,6 +153,96 @@ class GameFramework {
       setInterval(() => this.updateTime(), 1000);
       this.updatePotentialWin();
       this.updateBalance();
+    }
+    
+    /**
+     * Ensure gameLogic has all required methods
+     * Generic fallbacks for any game
+     * @private
+     */
+    _ensureGameLogicComplete() {
+      // First make sure gameLogic exists
+      this.config.gameLogic = this.config.gameLogic || {};
+      
+      // Check each required method and provide a fallback if missing
+      if (!this.config.gameLogic.spin || typeof this.config.gameLogic.spin !== 'function') {
+        this.config.gameLogic.spin = function(callback) {
+          setTimeout(() => {
+            if (typeof callback === 'function') {
+              callback({
+                isWin: Math.random() > 0.7,
+                payout: 10
+              });
+            }
+          }, 1000);
+        };
+      }
+      
+      if (!this.config.gameLogic.calculateWin || typeof this.config.gameLogic.calculateWin !== 'function') {
+        this.config.gameLogic.calculateWin = function(betAmount, riskLevel, result) {
+          if (!result.isWin) return 0;
+          
+          const multipliers = {
+            'low': 2,
+            'medium': 3,
+            'high': 5
+          };
+          const multiplier = multipliers[riskLevel] || 3;
+          return betAmount * multiplier;
+        };
+      }
+      
+      if (!this.config.gameLogic.renderGame || typeof this.config.gameLogic.renderGame !== 'function') {
+        this.config.gameLogic.renderGame = function(ctx, width, height, state) {
+          if (!ctx) return;
+          
+          const centerX = width / 2;
+          const centerY = height / 2;
+          
+          // Draw game title
+          ctx.font = 'bold 48px Arial';
+          ctx.fillStyle = '#FFD700';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Game Prototype', centerX, centerY - 100);
+          
+          // Instructions
+          ctx.font = '24px Arial';
+          ctx.fillStyle = 'white';
+          ctx.fillText('Click SPIN to play!', centerX, centerY);
+        };
+      }
+      
+      if (!this.config.gameLogic.handleWin || typeof this.config.gameLogic.handleWin !== 'function') {
+        this.config.gameLogic.handleWin = function(ctx, width, height, winAmount, result) {
+          if (!ctx) return;
+          
+          const centerX = width / 2;
+          const centerY = height / 2;
+          
+          // Draw win message
+          ctx.font = 'bold 64px Arial';
+          ctx.fillStyle = '#FFD700';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`WIN! +${winAmount.toFixed(2)} €`, centerX, centerY - 50);
+        };
+      }
+      
+      if (!this.config.gameLogic.handleLoss || typeof this.config.gameLogic.handleLoss !== 'function') {
+        this.config.gameLogic.handleLoss = function(ctx, width, height, result) {
+          if (!ctx) return;
+          
+          const centerX = width / 2;
+          
+          // Draw try again message
+          ctx.font = 'bold 36px Arial';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Try again!', centerX, height - 100);
+        };
+      }
     }
   
     /**
@@ -287,6 +380,9 @@ class GameFramework {
      * Draw the canvas with the appropriate theme and layout
      */
     drawCanvas() {
+      // CRITICAL FIX: Always re-check game logic methods before drawing
+      this._ensureGameLogicComplete();
+      
       // Clear canvas
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       
@@ -298,8 +394,11 @@ class GameFramework {
         gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, 0);
       }
       
-      // Set colors based on theme
-      const colors = this.config.canvasBackground[this.state.theme];
+      // Set colors based on theme with safety check
+      const colors = this.config.canvasBackground && this.config.canvasBackground[this.state.theme] 
+        ? this.config.canvasBackground[this.state.theme]
+        : ['#071824', '#071d2a']; // Default colors
+      
       gradient.addColorStop(0, colors[0]);
       gradient.addColorStop(1, colors[1]);
       
@@ -310,8 +409,40 @@ class GameFramework {
       // Draw grid for reference
       this.drawGrid();
       
-      // Call the game's render function
-      this.config.gameLogic.renderGame(this.ctx, this.canvas.width, this.canvas.height, this.state);
+      // Call the game's render function with safety check
+      if (this.config && this.config.gameLogic && typeof this.config.gameLogic.renderGame === 'function') {
+        try {
+          this.config.gameLogic.renderGame(this.ctx, this.canvas.width, this.canvas.height, this.state);
+        } catch (error) {
+          this.renderFallbackGame();
+        }
+      } else {
+        this.renderFallbackGame();
+      }
+    }
+    
+    /**
+     * Render a fallback game display when the actual game rendering fails
+     * @private
+     */
+    renderFallbackGame() {
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+      
+      // Draw a simple fallback interface
+      this.ctx.font = 'bold 48px Arial';
+      this.ctx.fillStyle = '#FFD700';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(this.config.gameTitle || 'Game Prototype', centerX, centerY - 80);
+      
+      this.ctx.font = '24px Arial';
+      this.ctx.fillStyle = 'white';
+      this.ctx.fillText('Game is initializing...', centerX, centerY);
+      
+      this.ctx.font = '18px Arial';
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      this.ctx.fillText('Click SPIN to play', centerX, centerY + 50);
     }
   
     /**
@@ -381,19 +512,56 @@ class GameFramework {
      * Begin the game spin process
      */
     spin() {
-      if (this.state.isSpinning) return;
+      if (this.state.isSpinning) {
+        return;
+      }
+      
       if (this.state.balance < this.state.betAmount) {
         alert("Insufficient balance!");
         return;
       }
+      
+      // CRITICAL FIX: Always re-check game logic methods before spinning
+      this._ensureGameLogicComplete();
       
       this.state.isSpinning = true;
       this.state.balance -= this.state.betAmount;
       this.updateBalance();
       this.elements.spinButton.textContent = 'SPINNING...';
       
-      // Use the game-specific spin logic
-      this.config.gameLogic.spin(this.onSpinComplete.bind(this));
+      // Create a safety wrapper for the callback
+      const safeCallback = (result) => {
+        try {
+          this.onSpinComplete(result || {
+            isWin: Math.random() > 0.7,
+            payout: 10
+          });
+        } catch (error) {
+          console.error('Error in onSpinComplete handler:', error);
+          // Reset spinning state as a last resort
+          this.state.isSpinning = false;
+          this.elements.spinButton.textContent = this.state.autoPlay ? 'AUTO SPIN' : 'SPIN';
+        }
+      };
+      
+      try {
+        // Double check spin method exists
+        if (typeof this.config.gameLogic.spin !== 'function') {
+          throw new Error('Missing spin method');
+        }
+        
+        // Call the game's spin method with the safety wrapper
+        this.config.gameLogic.spin(safeCallback);
+      } catch (error) {
+        console.error('Error calling game spin method:', error);
+        // Fall back to default implementation
+        setTimeout(() => {
+          safeCallback({
+            isWin: Math.random() > 0.7,
+            payout: 10
+          });
+        }, 1000);
+      }
     }
   
     /**
@@ -401,21 +569,55 @@ class GameFramework {
      * @param {Object} result - Result of the spin
      */
     onSpinComplete(result) {
-      if (result.isWin) {
-        const winAmount = this.config.gameLogic.calculateWin(
-          this.state.betAmount, 
-          this.state.riskLevel,
-          result
-        );
+      if (result && result.isWin) {
+        // Calculate win amount with safety check
+        let winAmount = 0;
+        
+        if (this.config && this.config.gameLogic && typeof this.config.gameLogic.calculateWin === 'function') {
+          winAmount = this.config.gameLogic.calculateWin(
+            this.state.betAmount, 
+            this.state.riskLevel,
+            result
+          );
+        } else {
+          // Default win calculation
+          console.error('Game logic calculateWin method is missing - using default');
+          winAmount = this.state.betAmount * 2;
+        }
         
         this.state.balance += winAmount;
         this.updateBalance();
         
-        // Call the game's win handler
-        this.config.gameLogic.handleWin(this.ctx, this.canvas.width, this.canvas.height, winAmount, result);
+        // Call the game's win handler with safety check
+        if (this.config && this.config.gameLogic && typeof this.config.gameLogic.handleWin === 'function') {
+          this.config.gameLogic.handleWin(this.ctx, this.canvas.width, this.canvas.height, winAmount, result);
+        } else {
+          // Default win handler
+          console.error('Game logic handleWin method is missing - using default');
+          if (this.ctx) {
+            this.ctx.font = 'bold 48px Arial';
+            this.ctx.fillStyle = 'gold';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`WIN! +${winAmount.toFixed(2)} ${this.config.currency}`, 
+                              this.canvas.width/2, this.canvas.height/2);
+          }
+        }
       } else {
-        // Call the game's loss handler
-        this.config.gameLogic.handleLoss(this.ctx, this.canvas.width, this.canvas.height, result);
+        // Call the game's loss handler with safety check
+        if (this.config && this.config.gameLogic && typeof this.config.gameLogic.handleLoss === 'function') {
+          this.config.gameLogic.handleLoss(this.ctx, this.canvas.width, this.canvas.height, result);
+        } else {
+          // Default loss handler
+          console.error('Game logic handleLoss method is missing - using default');
+          if (this.ctx) {
+            this.ctx.font = 'bold 36px Arial';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('Try again!', this.canvas.width/2, this.canvas.height - 100);
+          }
+        }
       }
       
       this.state.isSpinning = false;

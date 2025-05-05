@@ -18,18 +18,16 @@
       
       try {
         switch(gameType) {
-          case 'slot':
-            log('Creating SlotGame instance...', 'orange');
-            gameInstance = new SlotGame();
-            break;
           case 'dice':
             log('Creating DiceGame instance...', 'orange');
             gameInstance = new DiceGame();
             break;
+            
           case 'card':
             log('Creating CardGame instance...', 'orange');
             gameInstance = new CardGame();
             break;
+            
           default:
             log(`Unknown game type: ${gameType}`, 'red');
             return null;
@@ -61,11 +59,6 @@
       log('=== Testing class inheritance', 'blue');
       
       try {
-        // Test SlotGame
-        const slotGame = new SlotGame();
-        log(`SlotGame instanceof BaseGame: ${slotGame instanceof BaseGame}`, 
-            slotGame instanceof BaseGame ? 'green' : 'red');
-        
         // Test DiceGame
         const diceGame = new DiceGame();
         log(`DiceGame instanceof BaseGame: ${diceGame instanceof BaseGame}`, 
@@ -84,15 +77,37 @@
     // Run all tests
     runAllTests: function() {
       log('======== RUNNING ALL TESTS ========', 'blue');
+      
+      // Confirm all game classes are available
+      log('Verifying game classes are available', 'blue');
+      const verifyClasses = {
+        'BaseGame': typeof BaseGame !== 'undefined',
+        'DiceGame': typeof DiceGame !== 'undefined',
+        'CardGame': typeof CardGame !== 'undefined'
+      };
+      
+      let allClassesAvailable = true;
+      for (const [className, isAvailable] of Object.entries(verifyClasses)) {
+        log(`${className} available: ${isAvailable}`, isAvailable ? 'green' : 'red');
+        if (!isAvailable) {
+          allClassesAvailable = false;
+        }
+      }
+      
+      if (!allClassesAvailable) {
+        log('Some required game classes are missing! Aborting tests', 'red');
+        return;
+      }
+      
+      // Continue with the tests
       this.checkInheritance();
       
       // Test individual game initialization
-      this.initializeGame('slot');
       this.initializeGame('dice');
       this.initializeGame('card');
       
       // Test game switching
-      this.switchGame('slot');
+      this.switchGame('dice');
       
       log('======== ALL TESTS COMPLETE ========', 'blue');
     }

@@ -4,12 +4,8 @@ class GameLoader {
     this.gameInstances = {};
     this.activeGame = null;
     
-    // Define game registry
+    // Define game registry (SlotGame removed)
     this.gameRegistry = {
-      'slot': {
-        name: 'Slot Game',
-        class: 'SlotGame'
-      },
       'dice': {
         name: 'Dice Game',
         class: 'DiceGame'
@@ -55,12 +51,12 @@ class GameLoader {
     }
     
     if (this.gameSelector) {
-      // Set up a simple, direct event listener for game switching
+      // Set up simple event listener for game switching
       this.gameSelector.addEventListener('change', () => {
         const selectedGameType = this.gameSelector.value;
         console.log('Game selection changed to:', selectedGameType);
         
-        // Use the simplest approach - force recreate the game from scratch
+        // Use standard game creation for all games
         this.forceCreateNewGame(selectedGameType);
       });
       
@@ -73,19 +69,45 @@ class GameLoader {
   }
   
   /**
-   * Force create a new game instance without any caching
+   * Create a new game instance
+   * Simplified implementation without SlotGame references
    */
   forceCreateNewGame(gameType) {
-    console.log(`Forcing creation of new game instance: ${gameType}`);
+    // CRITICAL FIX: Prevent recursive calls and infinite loops
+    if (this._creatingGame) {
+      console.warn('Already creating a game, ignoring additional request');
+      return;
+    }
+    
+    this._creatingGame = true;
+    console.log(`Creating new game instance: ${gameType}`);
     
     try {
       // First clean up any active game
       if (this.activeGame) {
+        // Special cleanup for games with animation frames
+        if (this.activeGame.animationId) {
+          cancelAnimationFrame(this.activeGame.animationId);
+          this.activeGame.animationId = null;
+        }
+        
+        // Remove all references to the active game
         this.activeGame = null;
       }
       
-      // Remove any cached instance
+      // Remove any cached instance with additional cleanup
       if (this.gameInstances[gameType]) {
+        // Special cleanup for specific game types
+        try {
+          const instance = this.gameInstances[gameType];
+          if (instance.cleanup && typeof instance.cleanup === 'function') {
+            instance.cleanup();
+          }
+        } catch (cleanupError) {
+          console.warn(`Error during cleanup of ${gameType}:`, cleanupError);
+        }
+        
+        // Remove from cache
         delete this.gameInstances[gameType];
       }
       
@@ -107,7 +129,7 @@ class GameLoader {
         return;
       }
       
-      // Create new instance
+      // Create a new instance of the game
       this.gameInstances[gameType] = new GameClass();
       
       // Set as active game
@@ -126,8 +148,38 @@ class GameLoader {
       
       console.log(`Successfully created and activated new ${gameType} game`);
       
+      // Force a redraw of the game canvas
+      if (this.activeGame && this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
+        setTimeout(() => {
+          try {
+            this.activeGame.game.drawCanvas();
+          } catch (drawError) {
+            console.error('Error during initial canvas draw:', drawError);
+          }
+        }, 100);
+      }
+      
     } catch (error) {
       console.error(`Error creating new game instance:`, error);
+      // Attempt recovery if creation failed
+      try {
+        console.log('Attempting recovery after game creation error');
+        // Fallback to first available game
+        const firstGameType = Object.keys(this.gameRegistry)[0];
+        if (firstGameType && firstGameType !== gameType) {
+          // Reset creation flag before recursive call
+          this._creatingGame = false;
+          this.forceCreateNewGame(firstGameType);
+        }
+      } catch (recoveryError) {
+        console.error('Failed to recover from game creation error:', recoveryError);
+      }
+    } finally {
+      // CRITICAL: Always reset creation flag when done
+      setTimeout(() => {
+        this._creatingGame = false;
+        console.log('Game creation lock released');
+      }, 100);
     }
   }
   
@@ -230,19 +282,32 @@ class GameLoader {
     this.activateGameWithEffects(gameType);
   }
 
+  /**
+   * Standard game loading method
+   */
   loadGame(gameType) {
-    console.log(`Loading game: ${gameType}`);
-    
-    // Always update the selector to match
-    if (this.gameSelector && this.gameSelector.value !== gameType) {
-      this.gameSelector.value = gameType;
+    // CRITICAL FIX: Prevent recursive calls and infinite loops
+    if (this._loadingGame) {
+      console.warn('Already loading a game, ignoring additional request');
+      return;
     }
     
-    // Special handling for slot game - always do a complete reload
-    // This ensures slot game can always be switched to reliably
-    if (gameType === 'slot' && this.gameInstances[gameType]) {
-      console.log(`Forcing complete reload of slot game for reliability`);
-      delete this.gameInstances[gameType];
+    this._loadingGame = true;
+    console.log(`Loading game: ${gameType}`);
+    
+    // Always update the selector to match, but use a flag to prevent event triggering
+    if (this.gameSelector && this.gameSelector.value !== gameType) {
+      // Temporarily remove event listener
+      const originalOnChange = this.gameSelector.onchange;
+      this.gameSelector.onchange = null;
+      
+      // Update value
+      this.gameSelector.value = gameType;
+      
+      // Restore event listener
+      setTimeout(() => {
+        this.gameSelector.onchange = originalOnChange;
+      }, 50);
     }
     
     // If already loaded, just activate it
@@ -270,34 +335,13 @@ class GameLoader {
       
       if (!GameClass) {
         console.error(`Game class ${className} not found!`);
-        
-        // Try to wait and retry once if game classes might be loading
-        setTimeout(() => {
-          const retryGameClass = window[className];
-          if (retryGameClass) {
-            console.log(`Game class ${className} found after retry!`);
-            try {
-              this.gameInstances[gameType] = new retryGameClass();
-              // Clear the loading flag
-              this._loadingInProgress = null;
-              // Activate the game after a short delay to let it initialize
-              setTimeout(() => this.activateGame(gameType), 100);
-            } catch (retryError) {
-              console.error(`Failed to create game instance on retry:`, retryError);
-              this._loadingInProgress = null;
-            }
-          } else {
-            console.error(`Game class ${className} still not found after retry`);
-            this._loadingInProgress = null;
-          }
-        }, 500);
-        
+        this._loadingInProgress = null;
         return;
       }
       
       console.log(`Creating new instance of ${className}`);
       
-      // Create a try/catch block for each game initialization
+      // Create a try/catch block for game initialization
       try {
         this.gameInstances[gameType] = new GameClass();
         
@@ -336,6 +380,12 @@ class GameLoader {
       console.error(`Failed to load game ${gameType}:`, error);
       console.error('Error details:', error.message);
       this._loadingInProgress = null;
+    } finally {
+      // Reset loading flag after a delay
+      setTimeout(() => {
+        this._loadingGame = false;
+        console.log('Game loading lock released');
+      }, 500);
     }
   }
 
@@ -371,7 +421,7 @@ class GameLoader {
         }, 300);
       }
       
-      // Update active game - CRITICAL STEP
+      // Update active game
       this.activeGame = this.gameInstances[gameType];
       
       // Update selector if needed

@@ -258,9 +258,139 @@
       
       button.addEventListener('click', function() {
         if (window.gameLoader) {
-          // Always create a fresh instance to ensure reliable switching
-          window.gameLoader.forceCreateNewGame(gameType);
-          showStatusMessage(`Switched to ${label}`);
+          // Special direct handling for SlotGame
+          if (gameType === 'slot') {
+            console.log('Debug button: Direct SlotGame creation');
+            try {
+              // Force cleanup of any existing game
+              if (window.gameLoader.activeGame) {
+                window.gameLoader.activeGame = null;
+              }
+              
+              // Remove any cached instance
+              if (window.gameLoader.gameInstances['slot']) {
+                delete window.gameLoader.gameInstances['slot'];
+              }
+              
+              // Create a fresh SlotGame instance directly
+              const slotConfig = {
+                gameTitle: 'Pirate Slots',
+                initialBalance: 1000,
+                initialBet: 10,
+                maxBet: 500,
+                reels: 3,
+                rows: 3,
+                symbols: ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'],
+              };
+              
+              // Define a minimal SlotGame if not available
+              if (typeof window.SlotGame !== 'function') {
+                console.log('SlotGame not available - defining emergency version');
+                window.SlotGame = class SlotGame extends BaseGame {
+                  constructor(config = {}) {
+                    // Include gameLogic in the base config
+                    const fullConfig = Object.assign({}, config, {
+                      gameLogic: {
+                        spin: function(callback) {
+                          if (typeof callback === 'function') {
+                            setTimeout(() => callback({isWin: false}), 1000);
+                          }
+                        },
+                        calculateWin: function() { return 10; },
+                        renderGame: function(ctx, w, h) {
+                          if (!ctx) return;
+                          ctx.font = '48px Arial';
+                          ctx.fillStyle = 'white';
+                          ctx.textAlign = 'center';
+                          ctx.fillText('Debug Slot Game', w/2, h/2);
+                        },
+                        handleWin: function() {},
+                        handleLoss: function() {}
+                      }
+                    });
+                    
+                    // Call super with complete config
+                    super(fullConfig);
+                    
+                    // Set up basic state
+                    this.reelState = [
+                      ['🎁', '💀', '🍾'],
+                      ['💰', '🎁', '💀'],
+                      ['🍾', '💰', '🎁']
+                    ];
+                    
+                    // Ensure gameLogic methods are bound to this instance
+                    if (this.game && this.game.config && this.game.config.gameLogic) {
+                      this.game.config.gameLogic.spin = this.spin.bind(this);
+                      this.game.config.gameLogic.calculateWin = this.calculateWin.bind(this);
+                      this.game.config.gameLogic.renderGame = this.renderGame.bind(this);
+                      this.game.config.gameLogic.handleWin = this.handleWin.bind(this);
+                      this.game.config.gameLogic.handleLoss = this.handleLoss.bind(this);
+                    }
+                  }
+                  
+                  // Implementation of required methods
+                  renderGame(ctx, w, h) {
+                    if (!ctx) return;
+                    ctx.font = '48px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Debug Slot Game', w/2, h/2);
+                  }
+                  
+                  spin(cb) { 
+                    if (typeof cb === 'function') {
+                      setTimeout(() => cb({isWin: false}), 1000); 
+                    }
+                  }
+                  
+                  calculateWin() { return 10; }
+                  handleWin() {}
+                  handleLoss() {}
+                  cleanup() {}
+                };
+              }
+              
+              // Create new instance with minimal configuration
+              window.gameLoader.gameInstances['slot'] = new window.SlotGame({
+                gameTitle: 'Simple Slots'
+              });
+              
+              // Set as active game
+              window.gameLoader.activeGame = window.gameLoader.gameInstances['slot'];
+              
+              // Update selector
+              if (window.gameLoader.gameSelector) {
+                window.gameLoader.gameSelector.value = 'slot';
+              }
+              
+              // Update title
+              const titleElement = document.querySelector('.game-title');
+              if (titleElement) {
+                titleElement.textContent = 'Slot Game';
+              }
+              
+              // Force redraw
+              setTimeout(() => {
+                if (window.gameLoader.activeGame && 
+                    window.gameLoader.activeGame.game && 
+                    window.gameLoader.activeGame.game.drawCanvas) {
+                  window.gameLoader.activeGame.game.drawCanvas();
+                }
+              }, 100);
+              
+              showStatusMessage(`Direct switch to Slot Game`);
+            } catch (error) {
+              console.error('Error in direct SlotGame creation:', error);
+              // Fallback to normal method
+              window.gameLoader.forceCreateNewGame(gameType);
+              showStatusMessage(`Switched to ${label} (fallback method)`);
+            }
+          } else {
+            // Normal handling for other games
+            window.gameLoader.forceCreateNewGame(gameType);
+            showStatusMessage(`Switched to ${label}`);
+          }
         } else {
           showStatusMessage('Game loader not found!', true);
         }

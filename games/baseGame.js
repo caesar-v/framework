@@ -5,6 +5,13 @@ class BaseGame {
   constructor(config = {}) {
     console.log('BaseGame constructor called with config:', config);
     
+    // Clear any existing game instance if this is a re-initialization
+    if (this.game) {
+      console.log('Cleaning up existing game instance');
+      // Remove any canvas handlers or animation loops
+      this.game = null;
+    }
+    
     // Store base configuration - this will be used by the framework
     this.config = config;
     
