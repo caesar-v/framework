@@ -40,6 +40,9 @@ class AuthManager {
     // Check if user is already logged in (e.g., from localStorage)
     this.checkLoggedInState();
     
+    // Update the UI based on login state (will show/hide user-only elements)
+    this.updateUI();
+    
     console.log('Auth Manager initialized successfully');
   }
   
@@ -177,11 +180,69 @@ class AuthManager {
       if (this.elements.username) {
         this.elements.username.textContent = this.user.username;
       }
+      
+      // Show all user-only elements
+      this.showUserOnlyElements();
     } else {
       // Show auth buttons, hide user info
       this.elements.authButtons.style.display = 'flex';
       this.elements.userInfo.style.display = 'none';
+      
+      // Hide all user-only elements
+      this.hideUserOnlyElements();
     }
+  }
+  
+  /**
+   * Show all elements that should only be visible to logged-in users
+   */
+  showUserOnlyElements() {
+    // Remove the style tag if it exists
+    const existingStyle = document.getElementById('user-elements-style');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Create a new style element to override the !important rule
+    const styleElement = document.createElement('style');
+    styleElement.id = 'user-elements-style';
+    styleElement.textContent = `
+      .user-only-element {
+        display: flex !important;
+      }
+      .user-only-element.chat-panel {
+        display: block !important;
+        opacity: 0;
+      }
+    `;
+    document.head.appendChild(styleElement);
+    
+    // Special case for chat panel which should not be opened initially
+    if (window.chatPanel && typeof window.chatPanel.closeChat === 'function') {
+      window.chatPanel.closeChat();
+    }
+    
+    // Trigger any necessary UI updates
+    window.dispatchEvent(new Event('resize'));
+  }
+  
+  /**
+   * Hide all elements that should only be visible to logged-in users
+   */
+  hideUserOnlyElements() {
+    // Remove the override style
+    const existingStyle = document.getElementById('user-elements-style');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Ensure chat panel is closed if open
+    if (window.chatPanel && typeof window.chatPanel.closeChat === 'function') {
+      window.chatPanel.closeChat();
+    }
+    
+    // Trigger any necessary UI updates
+    window.dispatchEvent(new Event('resize'));
   }
   
   /**

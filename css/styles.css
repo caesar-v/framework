@@ -359,6 +359,13 @@
     color: var(--color-danger);
   }
   
+  /* User-only elements - Initially hidden until user is logged in */
+  .user-only-element {
+    display: none !important;
+  }
+  
+  /* This !important will be removed by the JS when user logs in */
+  
   .header-right {
     display: flex;
     align-items: center;

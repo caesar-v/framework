@@ -118,6 +118,22 @@ class ChatPanelManager {
         this.closeChat();
       }
     });
+    
+    // Listen for login/logout events to show/hide chat
+    window.addEventListener('userLogin', () => {
+      // Make chat panel available but don't open it automatically
+      if (this.elements.panel) {
+        this.elements.panel.classList.remove('hidden');
+      }
+    });
+    
+    window.addEventListener('userLogout', () => {
+      // Close chat if open and hide panel
+      this.closeChat();
+      if (this.elements.panel) {
+        this.elements.panel.classList.add('hidden');
+      }
+    });
   }
   
   /**

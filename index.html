@@ -33,7 +33,8 @@
           </div>
         </div>
         <div class="header-right">
-          <div class="balance-display">
+          <!-- Balance display - Only visible to logged in users -->
+          <div class="balance-display user-only-element" style="display: none;">
             <span class="wallet-label">Wallet</span>
             <div class="balance-value-container">
               <div class="gold-coin-icon">
@@ -71,7 +72,8 @@
             </div>
           </div>
           
-          <div class="header-controls">
+          <!-- Control buttons - Only visible to logged in users -->
+          <div class="header-controls user-only-element" style="display: none;">
             <button class="control-button active" id="sound-button" title="Toggle Sound">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a11.25 11.25 0 01-6.302 0l-1.32-.377A2.25 2.25 0 017.5 16.303v-3.75M9 9l10.5-3L9 3v6z" />
@@ -105,8 +107,8 @@
           <canvas id="game-canvas"></canvas>
         </div>
         
-        <!-- Chat Panel - Sliding panel for watchers.io chat -->
-        <div id="chat-panel" class="chat-panel">
+        <!-- Chat Panel - Sliding panel for watchers.io chat - Only visible for logged in users -->
+        <div id="chat-panel" class="chat-panel user-only-element">
           <div class="chat-header">
             <h3>Live Chat</h3>
             <button id="close-chat" class="close-chat">
