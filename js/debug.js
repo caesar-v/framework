@@ -215,13 +215,18 @@
     
     console.log('%c Debug complete. Check console for issues.', 'background: #222; color: #bada55; font-size: 14px; padding: 5px;');
     
+    // Create buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.position = 'fixed';
+    buttonsContainer.style.bottom = '10px';
+    buttonsContainer.style.right = '10px';
+    buttonsContainer.style.zIndex = '9999';
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.gap = '10px';
+    
     // Create a debug button for quick access
     const debugButton = document.createElement('button');
     debugButton.innerText = '🐛 Debug';
-    debugButton.style.position = 'fixed';
-    debugButton.style.bottom = '10px';
-    debugButton.style.right = '10px';
-    debugButton.style.zIndex = '9999';
     debugButton.style.background = '#222';
     debugButton.style.color = '#bada55';
     debugButton.style.border = 'none';
@@ -237,12 +242,49 @@
       window.debug.analyzeFramework();
       
       // Display status message
+      showStatusMessage('Debug info logged to console');
+    });
+    
+    // Create game switch buttons
+    const createGameSwitchButton = (gameType, label) => {
+      const button = document.createElement('button');
+      button.innerText = label;
+      button.style.background = '#333';
+      button.style.color = 'white';
+      button.style.border = 'none';
+      button.style.borderRadius = '4px';
+      button.style.padding = '8px 12px';
+      button.style.cursor = 'pointer';
+      
+      button.addEventListener('click', function() {
+        if (window.gameLoader) {
+          // Reset any stuck states
+          window.gameLoader.resetGameLoader();
+          
+          // Force activate the game
+          if (window.gameLoader.gameInstances[gameType]) {
+            window.gameLoader.forceActivateGame(gameType);
+            showStatusMessage(`Switched to ${label}`);
+          } else {
+            window.gameLoader.loadGame(gameType);
+            showStatusMessage(`Loading ${label}...`);
+          }
+        } else {
+          showStatusMessage('Game loader not found!', true);
+        }
+      });
+      
+      return button;
+    };
+    
+    // Helper to show status messages
+    const showStatusMessage = (message, isError = false) => {
       const statusMsg = document.createElement('div');
-      statusMsg.textContent = 'Debug info logged to console';
+      statusMsg.textContent = message;
       statusMsg.style.position = 'fixed';
-      statusMsg.style.bottom = '50px';
+      statusMsg.style.bottom = '70px';
       statusMsg.style.right = '10px';
-      statusMsg.style.background = 'rgba(0,0,0,0.7)';
+      statusMsg.style.background = isError ? 'rgba(255,0,0,0.7)' : 'rgba(0,0,0,0.7)';
       statusMsg.style.color = 'white';
       statusMsg.style.padding = '5px 10px';
       statusMsg.style.borderRadius = '4px';
@@ -253,9 +295,16 @@
       setTimeout(() => {
         statusMsg.remove();
       }, 3000);
-    });
+    };
     
-    document.body.appendChild(debugButton);
+    // Add all buttons to container
+    buttonsContainer.appendChild(debugButton);
+    buttonsContainer.appendChild(createGameSwitchButton('slot', '🎰 Slot'));
+    buttonsContainer.appendChild(createGameSwitchButton('dice', '🎲 Dice'));
+    buttonsContainer.appendChild(createGameSwitchButton('card', '🃏 Card'));
+    
+    // Add container to document
+    document.body.appendChild(buttonsContainer);
     
     // After a delay, run a full analysis
     setTimeout(() => {

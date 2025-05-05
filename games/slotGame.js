@@ -72,23 +72,44 @@ class SlotGame extends BaseGame {
      * Initialize the slot reels with random symbols
      */
     initReels() {
+      // Initialize with empty array to avoid issues
       this.reelState = [];
       
-      // Ensure config has necessary properties
-      const reels = this.config && this.config.reels ? this.config.reels : 3;
-      const rows = this.config && this.config.rows ? this.config.rows : 3;
-      const symbols = this.config && this.config.symbols ? this.config.symbols : ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'];
-      
-      for (let i = 0; i < reels; i++) {
-        const reel = [];
-        for (let j = 0; j < rows; j++) {
-          const randomIndex = Math.floor(Math.random() * symbols.length);
-          reel.push(symbols[randomIndex]);
+      try {
+        // Ensure config has necessary properties
+        const reels = this.config && this.config.reels ? this.config.reels : 3;
+        const rows = this.config && this.config.rows ? this.config.rows : 3;
+        const symbols = this.config && this.config.symbols ? this.config.symbols : ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'];
+        
+        // Generate random symbols for reels
+        for (let i = 0; i < reels; i++) {
+          const reel = [];
+          for (let j = 0; j < rows; j++) {
+            // Make sure symbols array is valid
+            if (symbols && symbols.length > 0) {
+              const randomIndex = Math.floor(Math.random() * symbols.length);
+              reel.push(symbols[randomIndex]);
+            } else {
+              // Fallback if symbols array is invalid
+              reel.push('💰');
+            }
+          }
+          this.reelState.push(reel);
         }
-        this.reelState.push(reel);
+        
+        console.log('Reels initialized successfully:', this.reelState);
+      } catch (error) {
+        console.error('Error initializing reels:', error);
+        
+        // Create a basic fallback reel state to prevent errors
+        for (let i = 0; i < 3; i++) {
+          const reel = [];
+          for (let j = 0; j < 3; j++) {
+            reel.push('💰');
+          }
+          this.reelState.push(reel);
+        }
       }
-      
-      console.log('Reels initialized:', this.reelState);
     }
     
     /**
@@ -96,17 +117,45 @@ class SlotGame extends BaseGame {
      * @param {Function} callback - Function to call when spin is complete
      */
     spin(callback) {
-      // Animation time
-      setTimeout(() => {
-        // Generate new reel state
-        this.initReels();
+      try {
+        // Animation time
+        setTimeout(() => {
+          try {
+            // Generate new reel state
+            this.initReels();
+            
+            // Check for winning combinations
+            const result = this.checkWin();
+            
+            // Return the result through callback
+            callback(result);
+          } catch (error) {
+            console.error('Error during spin completion:', error);
+            
+            // Provide a default result to prevent callback errors
+            const defaultResult = {
+              isWin: false,
+              winningSymbol: null,
+              winningRow: [],
+              reelState: this.reelState || []
+            };
+            
+            callback(defaultResult);
+          }
+        }, 2000);
+      } catch (error) {
+        console.error('Error setting up spin:', error);
         
-        // Check for winning combinations
-        const result = this.checkWin();
+        // Call callback immediately with default result to prevent hanging
+        const defaultResult = {
+          isWin: false,
+          winningSymbol: null,
+          winningRow: [],
+          reelState: this.reelState || []
+        };
         
-        // Return the result
-        callback(result);
-      }, 2000);
+        callback(defaultResult);
+      }
     }
     
     /**
@@ -114,22 +163,52 @@ class SlotGame extends BaseGame {
      * @returns {Object} Result object with win information
      */
     checkWin() {
-      // For simplicity, we'll just check for matching symbols on the middle row
-      const middleRow = [];
-      for (let i = 0; i < this.config.reels; i++) {
-        middleRow.push(this.reelState[i][1]); // Get middle symbol of each reel
+      try {
+        // Ensure we have a valid reelState to work with
+        if (!this.reelState || !Array.isArray(this.reelState) || this.reelState.length === 0) {
+          console.warn('Cannot check win, reelState is invalid');
+          return {
+            isWin: false,
+            winningSymbol: null,
+            winningRow: [],
+            reelState: []
+          };
+        }
+        
+        // Get the number of reels (safely)
+        const reels = this.config && this.config.reels ? this.config.reels : this.reelState.length;
+        
+        // For simplicity, we'll just check for matching symbols on the middle row
+        const middleRow = [];
+        for (let i = 0; i < reels; i++) {
+          // Make sure the reel exists and has a middle position
+          if (this.reelState[i] && this.reelState[i][1] !== undefined) {
+            middleRow.push(this.reelState[i][1]); // Get middle symbol of each reel
+          } else {
+            // If reel data is missing, add a placeholder
+            middleRow.push('🎁');
+          }
+        }
+        
+        // Check if all symbols in the middle row are the same
+        const firstSymbol = middleRow[0];
+        const isWin = middleRow.length > 0 && middleRow.every(symbol => symbol === firstSymbol);
+        
+        return {
+          isWin,
+          winningSymbol: isWin ? firstSymbol : null,
+          winningRow: middleRow,
+          reelState: this.reelState
+        };
+      } catch (error) {
+        console.error('Error in checkWin:', error);
+        return {
+          isWin: false,
+          winningSymbol: null,
+          winningRow: [],
+          reelState: this.reelState || []
+        };
       }
-      
-      // Check if all symbols in the middle row are the same
-      const firstSymbol = middleRow[0];
-      const isWin = middleRow.every(symbol => symbol === firstSymbol);
-      
-      return {
-        isWin,
-        winningSymbol: isWin ? firstSymbol : null,
-        winningRow: middleRow,
-        reelState: this.reelState
-      };
     }
     
     /**
@@ -165,26 +244,32 @@ class SlotGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
-      // Use static flag to prevent excessive logging - log only once
-      if (!this._loggedRenderInfo) {
-        console.log('SlotGame.renderGame - Initial render - config:', this.config);
-        console.log('SlotGame.renderGame - Initial render - reelState:', this.reelState);
-        this._loggedRenderInfo = true;
-      }
-      
-      const centerX = width / 2;
-      const centerY = height / 2;
-      
-      // Define slot machine dimensions with fallbacks
-      const slotWidth = 600;
-      const slotHeight = 400;
-      
-      // Ensure config has necessary properties for rendering
-      const reels = this.config && this.config.reels ? this.config.reels : 3;
-      const rows = this.config && this.config.rows ? this.config.rows : 3;
-      
-      const reelWidth = slotWidth / reels;
-      const symbolHeight = slotHeight / rows;
+      try {
+        // Use static flag to prevent excessive logging - log only once
+        if (!this._loggedRenderInfo) {
+          console.log('SlotGame.renderGame - Initial render');
+          this._loggedRenderInfo = true;
+        }
+        
+        // Make sure we have a valid reelState - if not, initialize it
+        if (!this.reelState || !Array.isArray(this.reelState) || this.reelState.length === 0) {
+          console.warn('SlotGame.renderGame - Missing reel state, initializing reels');
+          this.initReels();
+        }
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // Define slot machine dimensions with fallbacks
+        const slotWidth = 600;
+        const slotHeight = 400;
+        
+        // Ensure config has necessary properties for rendering
+        const reels = this.config && this.config.reels ? this.config.reels : 3;
+        const rows = this.config && this.config.rows ? this.config.rows : 3;
+        
+        const reelWidth = slotWidth / reels;
+        const symbolHeight = slotHeight / rows;
       
       // Draw slot machine frame
       ctx.fillStyle = '#333';
@@ -245,6 +330,33 @@ class SlotGame extends BaseGame {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.textAlign = 'center';
       ctx.fillText('Match 3 symbols on the payline to win!', centerX, centerY + slotHeight/2 + 50);
+        
+      } catch (error) {
+        // Handle any rendering errors gracefully
+        console.error('Error rendering SlotGame:', error);
+        
+        // Draw fallback message
+        if (ctx) {
+          const centerX = width / 2;
+          const centerY = height / 2;
+          
+          ctx.fillStyle = '#222';
+          ctx.fillRect(0, 0, width, height);
+          
+          ctx.font = 'bold 48px Arial';
+          ctx.fillStyle = '#FFD700';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Pirate Slots', centerX, centerY - 100);
+          
+          ctx.font = '24px Arial';
+          ctx.fillStyle = 'white';
+          ctx.fillText('Loading game...', centerX, centerY);
+          
+          // Try to force reinitialization next frame
+          setTimeout(() => this.initReels(), 500);
+        }
+      }
     }
     
     /**
