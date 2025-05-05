@@ -176,21 +176,25 @@ class ChatPanelManager {
       return; // Don't open chat if user is not logged in
     }
     
-    if (this.elements.panel) {
-      this.elements.panel.classList.add(this.config.activePanelClass);
-      // Force display and opacity for the panel
-      this.elements.panel.style.display = '';
-      this.elements.panel.style.opacity = '1';
-      this.elements.panel.style.maxWidth = '350px';
-    }
-    
-    if (this.elements.playground) {
-      this.elements.playground.classList.add(this.config.chatOpenClass);
-    }
-    
-    // Add the chat-open class to the game-content for the three-column layout
+    // First add chat-open class to game-content to ensure proper layout
     if (this.elements.gameContent) {
       this.elements.gameContent.classList.add(this.config.chatOpenClass);
+    }
+    
+    // Small delay to allow the grid to set up before animating the panel
+    setTimeout(() => {
+      if (this.elements.panel) {
+        this.elements.panel.classList.add(this.config.activePanelClass);
+        // Force display and opacity for the panel
+        this.elements.panel.style.display = '';
+        this.elements.panel.style.opacity = '1';
+        this.elements.panel.style.maxWidth = '400px';
+      }
+    }, 50);
+    
+    // Add class to playground (redundant but keeping for backward compatibility)
+    if (this.elements.playground) {
+      this.elements.playground.classList.add(this.config.chatOpenClass);
     }
     
     // Update button states
@@ -200,10 +204,20 @@ class ChatPanelManager {
     
     this.isChatOpen = true;
     
-    // If iframe exists and not already loaded, load it now
-    if (this.elements.iframe && this.elements.iframe.src === 'about:blank') {
-      const encodedUrl = this.parseWatchersUrl(this.config.watchersUrl);
-      this.elements.iframe.src = encodedUrl;
+    // Always refresh the iframe when opening the chat to ensure it's properly sized
+    if (this.elements.iframe) {
+      // If it's the first time, load the URL
+      if (this.elements.iframe.src === 'about:blank') {
+        const encodedUrl = this.parseWatchersUrl(this.config.watchersUrl);
+        this.elements.iframe.src = encodedUrl;
+      } else {
+        try {
+          // Try to reload but handle potential cross-origin issues
+          this.elements.iframe.contentWindow.location.reload();
+        } catch (e) {
+          console.log('Could not reload iframe: ', e);
+        }
+      }
     }
     
     // Trigger window resize to update canvas sizing
@@ -214,6 +228,7 @@ class ChatPanelManager {
    * Close the chat panel
    */
   closeChat() {
+    // First collapse the panel without changing layout
     if (this.elements.panel) {
       this.elements.panel.classList.remove(this.config.activePanelClass);
       // For logged in users, we keep the panel available but collapsed
@@ -227,15 +242,6 @@ class ChatPanelManager {
       }
     }
     
-    if (this.elements.playground) {
-      this.elements.playground.classList.remove(this.config.chatOpenClass);
-    }
-    
-    // Remove the chat-open class from the game-content
-    if (this.elements.gameContent) {
-      this.elements.gameContent.classList.remove(this.config.chatOpenClass);
-    }
-    
     // Update button states
     if (this.elements.headerChat) {
       this.elements.headerChat.classList.remove(this.config.activeButtonClass);
@@ -243,8 +249,20 @@ class ChatPanelManager {
     
     this.isChatOpen = false;
     
-    // Trigger window resize to update canvas sizing
-    window.dispatchEvent(new Event('resize'));
+    // Small delay before changing layout to ensure smooth transition
+    setTimeout(() => {
+      if (this.elements.playground) {
+        this.elements.playground.classList.remove(this.config.chatOpenClass);
+      }
+      
+      // Remove the chat-open class from the game-content
+      if (this.elements.gameContent) {
+        this.elements.gameContent.classList.remove(this.config.chatOpenClass);
+      }
+      
+      // Trigger window resize to update canvas sizing
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
   }
   
   /**

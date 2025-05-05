@@ -1567,7 +1567,7 @@
   .chat-panel {
     flex: 0 0 0; /* Initial width is 0 */
     max-width: 0; /* Start collapsed */
-    height: 100%;
+    height: 100%; /* Full height */
     background-color: var(--color-background); /* Match framework background */
     border-left: 1px solid var(--color-border); /* Match framework border */
     display: flex;
@@ -1576,12 +1576,14 @@
     transition: all 0.3s ease-in-out;
     overflow: hidden; /* Hide content when collapsed */
     opacity: 0;
+    order: 3; /* Always position it on the right in flex layout */
   }
   
   .chat-panel.active {
-    flex: 0 0 350px; /* Fixed width when active */
-    max-width: 350px;
+    flex: 0 0 400px; /* Fixed width when active - increased to 400px */
+    max-width: 400px;
     opacity: 1;
+    height: 100%; /* Full height of parent */
   }
   
   /* Apply specific styles when in grid layout */
@@ -1631,9 +1633,12 @@
   }
   
   .chat-content {
-    flex: 1;
+    flex: 1; /* Take all available space */
     overflow: hidden;
     position: relative;
+    display: block; /* Changed to block for absolute positioning of iframe */
+    height: calc(100% - 50px); /* Full height minus header height */
+    min-height: 400px; /* Minimum height to ensure sufficient space */
   }
   
   #watchers-chat {
@@ -1641,6 +1646,12 @@
     height: 100%;
     border: none;
     background-color: var(--color-panel); /* Match framework panel color */
+    flex: 1; /* Make iframe fill available space */
+    position: absolute; /* Position absolutely to fill entire container */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
   
   /* Configure game content as a three-column layout when chat is open */
@@ -1648,14 +1659,18 @@
   /* PC layout with three columns */
   .pc .game-content {
     transition: all 0.3s ease-in-out;
+    position: relative; /* For proper positioning of chat panel */
+    display: flex; /* Always use flex to maintain structure */
+    height: 100%; /* Ensure full height */
   }
   
   /* Apply grid layout when chat is open */
   .pc .game-content.chat-open {
     display: grid;
-    grid-template-columns: 300px minmax(0, 1fr) 350px;
+    grid-template-columns: 300px minmax(0, 1fr) 400px; /* Fixed 400px for chat column */
     grid-template-areas: "betting playground chat";
     gap: var(--spacing-md);
+    height: 100%; /* Ensure full height */
   }
   
   .pc .game-content.chat-open .betting-zone {
@@ -1678,6 +1693,8 @@
     max-width: 100%; /* Allow it to fill its grid area */
     width: 100%;
     flex: 1 1 auto; /* Allow it to grow and shrink */
+    min-width: 350px; /* Ensure minimum width in grid layout */
+    height: 100%; /* Full height */
   }
   
   /* Adjust playground position instead of width */
@@ -1705,11 +1722,11 @@
       overflow: hidden;
       opacity: 0;
       order: 3; /* Place at the bottom */
-      height: 300px; /* Fixed height on mobile */
+      height: 500px; /* Increased height on mobile */
     }
     
     .mobile .chat-panel.active {
-      flex: 0 0 300px;
+      flex: 0 0 500px; /* Increased height on mobile */
       max-width: 100%;
       opacity: 1;
       width: auto;
@@ -1733,7 +1750,7 @@
     /* Make chat panel take full width at the bottom */
     .pc .chat-panel.active,
     .mobile .chat-panel.active {
-      flex: 0 0 250px; /* Shorter on very small screens */
+      flex: 0 0 400px; /* Sufficient height for chat on small screens */
       max-width: 100%;
       width: auto;
       margin: var(--spacing-md);
