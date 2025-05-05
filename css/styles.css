@@ -320,47 +320,74 @@
     overflow: hidden;
   }
   
-  /* Canvas styles */
-  .canvas-area {
-    flex: 1;
+  /* Playground zone - contains the game canvas */
+  .playground-zone {
     position: relative;
     overflow: hidden;
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    margin: var(--spacing-md);
   }
   
+  /* Canvas styles */
   canvas {
     display: block;
     width: 100%;
     height: 100%;
   }
   
-  /* Controls area - PC layout */
-  .pc .controls-area {
-    position: absolute;
-    left: var(--spacing-md);
-    bottom: var(--spacing-md);
-    width: 320px;
+  /* Betting zone - contains all betting and control elements */
+  .betting-zone {
+    display: flex;
+    flex-direction: column;
     background-color: rgba(7, 29, 42, 0.9);
     border-radius: var(--radius-lg);
     padding: var(--spacing-md);
     box-shadow: var(--shadow-lg);
-    display: flex;
-    flex-direction: column;
-    /* Important: In PC mode, the height adjusts to content */
-    height: auto;
-    max-height: calc(100% - var(--spacing-md) * 2);
     overflow-y: auto;
   }
   
-  /* Controls area - Mobile layout */
-  .mobile .controls-area {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(7, 29, 42, 0.9);
-    padding: var(--spacing-md);
-    display: flex;
+  /* PC Layout (16:9) - Betting zone on left, playground on right */
+  .pc .game-content {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  
+  .pc .playground-zone {
+    flex: 1;
+    order: 2; /* Playground on the right */
+    min-width: 0; /* Allow flex shrinking */
+  }
+  
+  .pc .betting-zone {
+    width: 300px;
+    order: 1; /* Betting zone on the left */
+    margin: var(--spacing-md);
+    margin-right: 0;
+    /* Height adjusts to content but doesn't exceed container */
+    height: auto;
+    max-height: calc(100% - var(--spacing-md) * 2);
+  }
+  
+  /* Mobile Layout (9:16) - Playground on top, betting zone at bottom */
+  .mobile .game-content {
     flex-direction: column;
+  }
+  
+  .mobile .playground-zone {
+    order: 1; /* Playground on top */
+    flex: 1;
+    margin-bottom: 0;
+    height: 60vh; /* Set height to about 60% of viewport height */
+  }
+  
+  .mobile .betting-zone {
+    order: 2; /* Betting zone at bottom */
+    margin: var(--spacing-md);
+    margin-top: 0;
+    width: auto;
+    max-height: none;
   }
   
   /* Control panels */
@@ -618,41 +645,31 @@
     color: var(--color-foreground);
   }
   
-  /* Order of elements in PC layout */
-  .pc .bet-panel {
-    order: 2;
+  /* Add spacing between elements in betting zone */
+  .betting-zone > * {
+    margin-bottom: var(--spacing-md);
   }
   
-  .pc .risk-panel {
-    order: 3;
+  .betting-zone > *:last-child {
+    margin-bottom: 0;
   }
   
-  .pc .play-area {
-    order: 4;
+  /* Adjust the width of the betting zone in mobile */
+  @media (max-height: 760px) {
+    .mobile .playground-zone {
+      height: 50vh; /* Smaller playground for very small screens */
+    }
   }
   
-  /* In PC layout, put play mode tabs at the top */
-  .pc .play-mode-section {
-    order: 1;
-  }
-  
-  /* Order of elements in mobile layout */
-  .mobile .bet-panel {
-    order: 1;
-  }
-  
-  .mobile .risk-panel {
-    order: 2;
-  }
-  
-  .mobile .play-area {
-    order: 3;
-  }
-  
-  /* In mobile layout, put play mode tabs below the profit panel (at the bottom) */
-  .mobile .play-mode-section {
-    order: 4;
-    margin-top: var(--spacing-md);
+  /* Adjust betting zone spacing for smaller screens */
+  @media (max-width: 480px) {
+    .betting-zone {
+      padding: var(--spacing-sm);
+    }
+    
+    .betting-zone > * {
+      margin-bottom: var(--spacing-sm);
+    }
   }
   
   /* Footer */
@@ -808,6 +825,14 @@
     z-index: 10;
   }
   
+  /* Play controls section */
+  .play-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+  }
+  
   /* Responsive adjustments */
   @media (max-width: 1200px) {
     .top-controls {
@@ -831,6 +856,27 @@
     }
   }
   
+  /* Adjust PC layout for smaller screens */
+  @media (max-width: 900px) {
+    /* Switch PC layout to be more like mobile on smaller screens */
+    .pc .game-content {
+      flex-direction: column;
+    }
+    
+    .pc .playground-zone {
+      order: 1;
+      height: 60vh;
+      margin-bottom: 0;
+    }
+    
+    .pc .betting-zone {
+      order: 2;
+      width: auto;
+      margin: var(--spacing-md);
+      margin-top: 0;
+    }
+  }
+  
   @media (max-width: 768px) {
     .header {
       flex-direction: column;
@@ -843,12 +889,6 @@
       justify-content: space-between;
     }
     
-    .pc .controls-area {
-      width: 100%;
-      left: 0;
-      right: 0;
-    }
-    
     .footer {
       flex-direction: column;
       align-items: flex-start;
@@ -859,6 +899,46 @@
     .popup {
       width: 95%;
     }
+    
+    /* Make betting zone more compact on mobile */
+    .betting-zone {
+      padding: var(--spacing-sm);
+    }
+    
+    /* Make controls more compact */
+    .control-panel, .risk-panel, .play-controls {
+      margin-bottom: var(--spacing-sm);
+      padding: var(--spacing-sm);
+    }
+    
+    /* Adjust playground height for small devices */
+    .mobile .playground-zone {
+      height: 50vh;
+    }
+  }
+  
+  /* Very small devices */
+  @media (max-width: 480px) {
+    .mobile .playground-zone {
+      height: 45vh;
+    }
+    
+    .betting-zone {
+      padding: var(--spacing-xs);
+    }
+    
+    .control-panel, .risk-panel, .play-controls {
+      padding: var(--spacing-xs);
+    }
+    
+    .bet-input-group {
+      gap: 5px;
+    }
+    
+    .quick-bets {
+      gap: 5px;
+    }
+  }
     /* Add this to your styles.css file */
   .game-selector-controls {
     display: flex;
