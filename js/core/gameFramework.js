@@ -510,9 +510,9 @@ class GameFramework {
                   this.canvas.width = playgroundWidth;
                   this.canvas.height = playgroundHeight;
                   
-                  // Update canvas size in settings panel
+                  // Update canvas size in settings panel with playground dimensions
                   if (this.elements.canvasSize) {
-                    this.elements.canvasSize.textContent = `Canvas: ${this.canvas.width}×${this.canvas.height}`;
+                    this.elements.canvasSize.textContent = `Canvas: ${this.canvas.width}×${this.canvas.height} | Playground: ${playgroundWidth}×${playgroundHeight}`;
                   }
                   
                   // Update PixiJS if used - v8 style
@@ -652,9 +652,20 @@ class GameFramework {
         this.elements.windowSize.textContent = `Window: ${windowWidth}×${windowHeight}`;
       }
       
-      // Update canvas size in settings panel
+      // Update canvas size and playground dimensions in settings panel
       if (this.elements.canvasSize && this.canvas) {
-        this.elements.canvasSize.textContent = `Canvas: ${this.canvas.width}×${this.canvas.height}`;
+        // Get the current playground dimensions
+        const playgroundElement = document.querySelector('.playground-zone');
+        let playgroundInfo = '';
+        
+        if (playgroundElement) {
+          const playgroundRect = playgroundElement.getBoundingClientRect();
+          const playgroundWidth = Math.round(playgroundRect.width);
+          const playgroundHeight = Math.round(playgroundRect.height);
+          playgroundInfo = ` | Playground: ${playgroundWidth}×${playgroundHeight}`;
+        }
+        
+        this.elements.canvasSize.textContent = `Canvas: ${this.canvas.width}×${this.canvas.height}${playgroundInfo}`;
       }
     }
     

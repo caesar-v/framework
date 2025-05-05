@@ -466,6 +466,131 @@ class CardGame extends BaseGame {
      * @param {number} height - The canvas height
      * @param {Object} state - The game state
      */
+    renderGameWithPixi(pixiApp, container, width, height, state) {
+      if (!pixiApp || !container) {
+        console.warn('PIXI renderer not available for CardGame');
+        return;
+      }
+      
+      // Use static flag to prevent excessive logging - log only once
+      if (!this._loggedRenderInfoPixi) {
+        console.log('CardGame.renderGameWithPixi - Initial PIXI render');
+        console.log('CardGame.renderGameWithPixi - Initial render - cards:', this.cards);
+        console.log('CardGame.renderGameWithPixi - Initial render - cardPositions:', this.cardPositions);
+        this._loggedRenderInfoPixi = true;
+      }
+      
+      try {
+        // Clear existing container
+        container.removeChildren();
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // Create full-canvas background
+        const background = new PIXI.Graphics();
+        background.beginFill(0x0E5A3C); // Dark green
+        background.drawRect(0, 0, width, height);
+        background.endFill();
+        container.addChild(background);
+        
+        // Create table with felt that fills most of the canvas
+        // Table size is proportional to canvas dimensions
+        const tableWidth = Math.min(width * 0.9, height * 1.5);
+        const tableHeight = Math.min(height * 0.8, tableWidth * 0.6);
+        
+        // Draw felt
+        const table = new PIXI.Graphics();
+        table.beginFill(0x27ae60); // Felt green
+        table.drawRect(
+          centerX - tableWidth/2,
+          centerY - tableHeight/2,
+          tableWidth,
+          tableHeight
+        );
+        table.endFill();
+        
+        // Draw table border
+        const borderWidth = Math.max(10, tableWidth * 0.02);
+        table.lineStyle(borderWidth, 0x1e8449);
+        table.drawRect(
+          centerX - tableWidth/2,
+          centerY - tableHeight/2,
+          tableWidth,
+          tableHeight
+        );
+        
+        container.addChild(table);
+        
+        // Draw title - positioned proportionally to the table
+        const titleFontSize = Math.max(32, Math.min(48, height * 0.06));
+        const titleStyle = new PIXI.TextStyle({
+          fontFamily: 'Poppins, Arial',
+          fontSize: titleFontSize,
+          fontWeight: 'bold',
+          fill: '#FFD700',
+          align: 'center'
+        });
+        
+        const titleText = new PIXI.Text(this.config.gameTitle, titleStyle);
+        titleText.anchor.set(0.5);
+        titleText.x = centerX;
+        titleText.y = centerY - tableHeight * 0.45;
+        
+        container.addChild(titleText);
+        
+        // Draw simple instructions if cards aren't dealt yet
+        if (!this.cards || this.cards.length === 0) {
+          const instructionsFontSize = Math.max(16, Math.min(24, height * 0.03));
+          const instructionsStyle = new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: instructionsFontSize,
+            fill: '#FFFFFF',
+            align: 'center'
+          });
+          
+          const instructionsText = new PIXI.Text('Click SPIN to deal cards!', instructionsStyle);
+          instructionsText.anchor.set(0.5);
+          instructionsText.x = centerX;
+          instructionsText.y = centerY;
+          
+          container.addChild(instructionsText);
+          
+          // Also add paytable
+          const handsFontSize = Math.max(14, Math.min(18, height * 0.022));
+          const handsStyle = new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: handsFontSize,
+            fill: '#FFFFFF',
+            align: 'left'
+          });
+          
+          const winningsX = centerX + tableWidth * 0.25;
+          let y = centerY - tableHeight * 0.25;
+          
+          const paytableTitle = new PIXI.Text('Winning Hands:', handsStyle);
+          paytableTitle.x = winningsX;
+          paytableTitle.y = y;
+          container.addChild(paytableTitle);
+          
+          // Add winning hands
+          y += handsFontSize * 1.5;
+          const item1 = new PIXI.Text('• Royal Flush: 15x', handsStyle);
+          item1.x = winningsX;
+          item1.y = y;
+          container.addChild(item1);
+          
+          y += handsFontSize * 1.4;
+          const item2 = new PIXI.Text('• Straight: 8x', handsStyle);
+          item2.x = winningsX;
+          item2.y = y;
+          container.addChild(item2);
+        }
+      } catch (error) {
+        console.error('Error in PIXI card game rendering:', error);
+      }
+    }
+    
     renderGame(ctx, width, height, state) {
       // Use static flag to prevent excessive logging - log only once
       if (!this._loggedRenderInfo) {
@@ -478,26 +603,52 @@ class CardGame extends BaseGame {
       const centerX = width / 2;
       const centerY = height / 2;
       
-      // Draw table background
-      ctx.fillStyle = '#27ae60';
-      ctx.fillRect(centerX - 500, centerY - 300, 1000, 600);
+      // Clear the entire canvas first
+      ctx.clearRect(0, 0, width, height);
+      
+      // Create gradient background that fills the entire canvas
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#0E5A3C'); // Dark green at top
+      gradient.addColorStop(1, '#215E3F'); // Slightly lighter green at bottom
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw poker table with felt that fills most of the canvas
+      // Table size is proportional to canvas dimensions
+      const tableWidth = Math.min(width * 0.9, height * 1.5);
+      const tableHeight = Math.min(height * 0.8, tableWidth * 0.6);
+      
+      // Draw felt
+      ctx.fillStyle = '#27ae60'; // Felt green
+      ctx.fillRect(
+        centerX - tableWidth/2, 
+        centerY - tableHeight/2, 
+        tableWidth, 
+        tableHeight
+      );
       
       // Draw table border
       ctx.strokeStyle = '#1e8449';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(centerX - 500, centerY - 300, 1000, 600);
+      ctx.lineWidth = Math.max(10, tableWidth * 0.02); // Proportional border
+      ctx.strokeRect(
+        centerX - tableWidth/2, 
+        centerY - tableHeight/2, 
+        tableWidth, 
+        tableHeight
+      );
       
-      // Draw title
-      ctx.font = 'bold 48px Poppins';
+      // Draw title - positioned proportionally to the canvas height
+      const titleFontSize = Math.max(32, Math.min(48, height * 0.06));
+      ctx.font = `bold ${titleFontSize}px Poppins`;
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Card Master', centerX, centerY - 350);
+      ctx.fillText('Card Master', centerX, centerY - tableHeight * 0.45);
       
-      // Add fallbacks for card dimensions
-      const cardWidth = this.config && this.config.cardWidth ? this.config.cardWidth : 120;
-      const cardHeight = this.config && this.config.cardHeight ? this.config.cardHeight : 180;
+      // Calculate card dimensions proportional to the table size
       const numCards = this.config && this.config.numCards ? this.config.numCards : 5;
+      const cardWidth = Math.min(120, tableWidth / (numCards * 1.5));
+      const cardHeight = cardWidth * 1.5; // Standard card ratio
       
       // Draw cards only if they exist
       const cardSpacing = cardWidth * 1.2;
@@ -535,33 +686,37 @@ class CardGame extends BaseGame {
         ctx.fillText('Loading cards...', centerX, centerY);
       }
       
-      // Draw instructions
-      ctx.font = '24px Montserrat';
+      // Draw instructions - positioned proportionally to the table
+      const instructionsFontSize = Math.max(16, Math.min(24, height * 0.03));
+      ctx.font = `${instructionsFontSize}px Montserrat`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.textAlign = 'center';
-      ctx.fillText('Deal cards and look for winning hands!', centerX, centerY + 200);
+      ctx.fillText('Deal cards and look for winning hands!', centerX, centerY + tableHeight * 0.35);
       
-      // Draw winning hands table
-      ctx.font = '18px Montserrat';
+      // Draw winning hands table - positioned proportionally
+      const handsFontSize = Math.max(14, Math.min(18, height * 0.022));
+      ctx.font = `${handsFontSize}px Montserrat`;
       ctx.textAlign = 'left';
-      let y = centerY - 250;
       
-      ctx.fillText('Winning Hands:', centerX + 200, y);
-      y += 30;
+      const winningsX = centerX + tableWidth * 0.25;
+      let y = centerY - tableHeight * 0.25;
       
-      ctx.fillText('• Royal Flush: 15x', centerX + 200, y);
-      y += 25;
+      ctx.fillText('Winning Hands:', winningsX, y);
+      y += handsFontSize * 1.5;
       
-      ctx.fillText('• Straight: 8x', centerX + 200, y);
-      y += 25;
+      ctx.fillText('• Royal Flush: 15x', winningsX, y);
+      y += handsFontSize * 1.4;
       
-      ctx.fillText('• Flush: 6x', centerX + 200, y);
-      y += 25;
+      ctx.fillText('• Straight: 8x', winningsX, y);
+      y += handsFontSize * 1.4;
       
-      ctx.fillText('• Pair: 2x', centerX + 200, y);
-      y += 25;
+      ctx.fillText('• Flush: 6x', winningsX, y);
+      y += handsFontSize * 1.4;
       
-      ctx.fillText('• High Card (A,K,Q,J): 1.5x', centerX + 200, y);
+      ctx.fillText('• Pair: 2x', winningsX, y);
+      y += handsFontSize * 1.4;
+      
+      ctx.fillText('• High Card (A,K,Q,J): 1.5x', winningsX, y);
     }
     
     /**
