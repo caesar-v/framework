@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Prototyping Framework</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/gameFramework.js"></script>
+  <script src="games/slotGame.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="outer-container">
+    <div class="top-controls">
+      <div class="layout-controls">
+        <span class="control-label">Layout:</span>
+        <div class="layout-toggle">
+          <input type="radio" name="layout" id="desktop" checked>
+          <label for="desktop">PC (1920×1080)</label>
+          <input type="radio" name="layout" id="mobile">
+          <label for="mobile">Mobile (1080×1920)</label>
+          <span class="toggle-indicator"></span>
+        </div>
+      </div>
+      
+      <div class="theme-controls">
+        <label class="control-label" for="theme-select">Theme:</label>
+        <select id="theme-select" class="control-select">
+          <option value="default">Dark Theme</option>
+          <option value="pirate">Pirate Theme</option>
+          <option value="neon">Neon Theme</option>
+          <option value="classic">Classic Casino</option>
+        </select>
+      </div>
+    </div>
+    
+    <div id="game-container" class="game-container pc">
+      <header class="header">
+        <h1 class="game-title">Game Title</h1>
+        <div class="header-right">
+          <div class="balance-display">
+            <span class="balance-label">Balance</span>
+            <span class="balance-value" id="balance-display">1000.00 €</span>
+          </div>
+          <div class="header-controls">
+            <button class="control-button active" id="sound-button" title="Toggle Sound">🔊</button>
+            <button class="control-button" id="menu-button" title="Game Menu">⚙️</button>
+          </div>
+        </div>
+      </header>
+      
+      <div class="game-content">
+        <div class="canvas-area">
+          <canvas id="game-canvas"></canvas>
+        </div>
+        
+        <div class="controls-area">
+          <!-- Bet Amount Panel -->
+          <div class="control-panel">
+            <div class="control-panel-header">
+              <span class="control-panel-title">Bet Amount</span>
+            </div>
+            <div class="bet-input-group">
+              <button class="btn btn-outline" id="decrease-bet">-</button>
+              <input type="text" class="bet-input" id="bet-input" value="10" readonly>
+              <span style="color: var(--color-foreground); align-self: center;">€</span>
+              <button class="btn btn-outline" id="increase-bet">+</button>
+            </div>
+            <div class="quick-bets">
+              <button class="quick-bet" data-bet="5">5</button>
+              <button class="quick-bet" data-bet="10">10</button>
+              <button class="quick-bet" data-bet="25">25</button>
+              <button class="quick-bet" data-bet="50">50</button>
+              <button class="quick-bet" data-bet="100">100</button>
+            </div>
+            <div class="quick-bets">
+              <button class="quick-bet quick-bet-wide" id="half-bet">1/2 Bet</button>
+              <button class="quick-bet quick-bet-wide" id="max-bet">Max Bet</button>
+            </div>
+          </div>
+          
+          <!-- Risk Level Panel -->
+          <div class="risk-panel">
+            <span class="risk-panel-title">Risk Level</span>
+            <div class="select-wrapper">
+              <select id="risk-level" class="select-dropdown">
+                <option value="low">Low Risk</option>
+                <option value="medium" selected>Medium Risk</option>
+                <option value="high">High Risk</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="play-area">
+            <!-- Spin Button -->
+            <button class="spin-btn" id="spin-button">SPIN</button>
+            
+            <!-- Profit Display -->
+            <div class="profit-panel">
+              <span class="profit-label">Profit on Win</span>
+              <span class="profit-value" id="potential-win">30.00 €</span>
+            </div>
+            
+            <!-- Play Mode Toggle (Manual/Auto) -->
+            <div class="play-mode-tabs">
+              <button class="play-mode-tab active" id="manual-tab">Manual</button>
+              <button class="play-mode-tab" id="auto-tab">Auto</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dimensions-display" id="dimensions-display">1920×1080</div>
+      </div>
+      
+      <footer class="footer">
+        <div>Session ID: PB-9876-5432</div>
+        <div id="current-time">00:00:00</div>
+        <div>Game Prototype Framework</div>
+      </footer>
+    </div>
+    
+    <!-- Popup Menu -->
+    <div class="overlay" id="menu-overlay">
+      <div class="popup">
+        <div class="popup-header">
+          <h2 class="popup-title">Game Information</h2>
+          <button class="popup-close" id="close-menu">×</button>
+        </div>
+        <div class="popup-tabs">
+          <div class="popup-tab active" data-tab="rules">Rules</div>
+          <div class="popup-tab" data-tab="paytable">Paytable</div>
+          <div class="popup-tab" data-tab="settings">Settings</div>
+          <div class="popup-tab" data-tab="fairness">Provably Fair</div>
+        </div>
+        <div class="popup-content">
+          <div class="tab-content active" id="rules-tab">
+            <h3>Game Rules</h3>
+            <p>This is a game prototyping framework. Customize these rules for your specific game implementation.</p>
+            <p>HOW TO PLAY:</p>
+            <ul>
+              <li>Place your bet and click SPIN</li>
+              <li>Game logic can be customized in your implementation</li>
+              <li>Winning conditions are defined by your game class</li>
+            </ul>
+          </div>
+          
+          <div class="tab-content" id="paytable-tab">
+            <h3>Paytable</h3>
+            <p>SYMBOL PAYOUTS (per bet unit):</p>
+            <ul>
+              <li>Symbol payouts are defined in your game implementation</li>
+              <li>Customize this table for your specific game</li>
+            </ul>
+          </div>
+          
+          <div class="tab-content" id="settings-tab">
+            <h3>Settings</h3>
+            <p>Adjust sound and game options:</p>
+            <div class="toggle-group" style="margin: 20px 0; display: flex; align-items: center; gap: 10px;">
+              <span style="color: var(--color-foreground-secondary);">Sound Effects</span>
+              <div class="toggle-switch" style="position: relative; width: 50px; height: 24px; background-color: var(--color-primary); border-radius: 999px; cursor: pointer;">
+                <div style="position: absolute; width: 20px; height: 20px; background-color: white; border-radius: 50%; top: 2px; left: 28px;"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-content" id="fairness-tab">
+            <h3>Provably Fair</h3>
+            <p>Our games use a provably fair algorithm to ensure fair outcomes:</p>
+            <ol>
+              <li>Each game has a unique server seed and client seed</li>
+              <li>Server seeds are hashed and provided before the game</li>
+              <li>Client seeds can be changed by you at any time</li>
+              <li>After each game, you can verify the fairness of the outcome</li>
+            </ol>
+            <p style="margin-top: 20px;">Current Session Hash: 0x7d2c8f1e5b9a6d4c8e7b2a9f5c3d8e7f6a3b2c1</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Load the framework and game implementation -->
+  <script src="gameFramework.js"></script>
+  <script src="slotGame.js"></script>
+</body>
+</html>
