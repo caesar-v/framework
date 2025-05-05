@@ -336,19 +336,24 @@
     background-color: var(--color-background-secondary);
     border: 1px solid var(--color-border);
     color: var(--color-foreground-secondary);
-    font-size: 18px;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-in-out);
+    padding: 0;
+  }
+  
+  .control-button svg {
+    width: 18px;
+    height: 18px;
   }
   
   .control-button:hover {
-    background-color: var(--color-primary);
-    color: var(--color-foreground);
+    background-color: rgba(252, 227, 3, 1); /* Brand primary color */
+    color: rgba(0, 0, 0, 1); /* Dark text on brand color */
   }
   
   .control-button.active {
-    background-color: var(--color-primary);
-    color: var(--color-foreground);
+    background-color: rgba(252, 227, 3, 1); /* Brand primary color */
+    color: rgba(0, 0, 0, 1); /* Dark text on brand color */
   }
   
   /* Main game content area - where canvas and controls display */
@@ -1221,5 +1226,142 @@
 
   #game-container.fade-in {
     opacity: 1;
+  }
+  
+  /* Chat Panel Styles */
+  
+  /* Chat toggle button */
+  .chat-toggle {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    color: var(--color-foreground);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    padding: 0;
+  }
+  
+  .chat-toggle svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .chat-toggle:hover {
+    background-color: var(--color-primary-hover);
+    transform: scale(1.05);
+  }
+  
+  /* Chat panel */
+  .chat-panel {
+    position: absolute;
+    top: 0;
+    right: -350px; /* Start off-screen */
+    width: 350px;
+    height: 100%;
+    background-color: var(--color-background); /* Match framework background */
+    border-left: 1px solid var(--color-border); /* Match framework border */
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease-in-out;
+  }
+  
+  .chat-panel.active {
+    right: 0;
+  }
+  
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--color-background-secondary); /* Match framework header */
+    border-bottom: 1px solid var(--color-border); /* Match framework borders */
+  }
+  
+  .chat-header h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--font-lg);
+    color: var(--color-accent); /* Match game title color */
+    font-weight: 600;
+  }
+  
+  .close-chat {
+    background: transparent;
+    border: none;
+    color: var(--color-foreground-secondary); /* Match framework secondary text */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    transition: color 0.2s ease;
+  }
+  
+  .close-chat svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .close-chat:hover {
+    color: var(--color-danger); /* Match framework danger color */
+  }
+  
+  .chat-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  #watchers-chat {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background-color: var(--color-panel); /* Match framework panel color */
+  }
+  
+  /* Adjust playground zone when chat is open */
+  .playground-zone.chat-open {
+    width: calc(100% - 350px);
+    transition: width 0.3s ease-in-out;
+  }
+  
+  /* Mobile adjustments for chat */
+  @media (max-width: 768px) {
+    .chat-panel {
+      width: 280px;
+      right: -280px;
+    }
+    
+    .playground-zone.chat-open {
+      width: calc(100% - 280px);
+    }
+  }
+  
+  /* Smaller screens - chat takes full width */
+  @media (max-width: 480px) {
+    .chat-panel {
+      width: 100%;
+      right: -100%;
+    }
+    
+    .playground-zone.chat-open {
+      width: 0;
+      overflow: hidden;
+    }
   }
   }
