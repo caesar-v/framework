@@ -115,6 +115,8 @@ The `GameFramework` constructor accepts a configuration object with the followin
 | defaultTheme | string | Default selected theme |
 | canvasDimensions | object | Dimensions for PC and mobile layouts |
 | defaultLayout | string | Default layout ('pc' or 'mobile') |
+| usePixi | boolean | Whether to use PixiJS for rendering (if available) |
+| pixiOptions | object | Additional options for PixiJS renderer |
 | gameLogic | object | Custom game logic methods |
 
 ## Game Logic Interface
@@ -139,10 +141,20 @@ Calculates the win amount based on the bet, risk level, and result.
 - The calculated win amount
 
 ### renderGame(ctx, width, height, state)
-Renders the game on the canvas.
+Renders the game on the canvas using the Canvas 2D API.
 
 **Parameters:**
 - `ctx`: The canvas 2D context
+- `width`: The canvas width
+- `height`: The canvas height
+- `state`: The current game state
+
+### renderGameWithPixi(pixiApp, container, width, height, state)
+Renders the game using PixiJS (optional, if PixiJS rendering is enabled).
+
+**Parameters:**
+- `pixiApp`: The PIXI.Application instance
+- `container`: The PIXI.Container to add game elements to
 - `width`: The canvas width
 - `height`: The canvas height
 - `state`: The current game state
@@ -166,9 +178,91 @@ Handles displaying loss animations or messages.
 - `height`: The canvas height
 - `result`: The result object from the spin
 
+## PixiJS Integration
+
+The framework includes built-in support for rendering games using PixiJS, a powerful 2D WebGL renderer. This provides several benefits:
+
+- Improved performance for complex games
+- Hardware acceleration
+- Advanced visual effects
+- Better asset management
+- Modern rendering capabilities
+
+### Using PixiJS in Your Game
+
+To use PixiJS in your game implementation, provide the `renderGameWithPixi` method in addition to the standard Canvas2D `renderGame` method:
+
+```javascript
+class YourGame extends BaseGame {
+  constructor(config = {}) {
+    super(config);
+    // Game initialization
+  }
+  
+  // Standard Canvas2D rendering (fallback)
+  renderGame(ctx, width, height, state) {
+    // Render using Canvas2D API
+  }
+  
+  // PixiJS rendering (preferred if available)
+  renderGameWithPixi(pixiApp, container, width, height, state) {
+    // Render using PixiJS
+    // container is a PIXI.Container for your game elements
+    
+    // Example: Create a sprite
+    const sprite = new PIXI.Sprite(PIXI.Texture.from('path/to/image.png'));
+    sprite.x = width / 2;
+    sprite.y = height / 2;
+    sprite.anchor.set(0.5);
+    container.addChild(sprite);
+  }
+}
+```
+
+### PixiHelper Utility
+
+The framework provides a `PixiHelper` utility to simplify common PixiJS operations:
+
+```javascript
+// Create sprites
+const sprite = await PixiHelper.createSprite('path/to/image.png', {
+  x: 100,
+  y: 100,
+  scale: 0.5,
+  anchor: 0.5
+});
+
+// Create text
+const text = PixiHelper.createText('Hello World', {
+  fontSize: 24,
+  fill: 0xFFFFFF
+}, {
+  x: 100,
+  y: 100,
+  anchor: 0.5
+});
+
+// Create animations
+const animation = await PixiHelper.createAnimation('path/to/spritesheet.json', 'animationName', {
+  x: 100,
+  y: 100,
+  animationSpeed: 0.5,
+  loop: true,
+  autoPlay: true
+});
+
+// Create shapes
+const circle = PixiHelper.createShape('circle', {
+  x: 100,
+  y: 100,
+  radius: 50,
+  fillColor: 0xFF0000
+});
+```
+
 ## Example Games
 
-The repository includes an example slot game implementation (`slotGame.js`) that demonstrates how to use the framework to create a simple slot machine game.
+The repository includes example game implementations that demonstrate how to use the framework to create different types of games.
 
 ## Customization
 

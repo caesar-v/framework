@@ -38,11 +38,20 @@ class GameFramework {
           mobile: { width: 1080, height: 1920 }
         },
         defaultLayout: 'pc',
+        // PixiJS integration options
+        usePixi: true, // Whether to use PixiJS for rendering (if available)
+        pixiOptions: {  // Additional options for PixiJS
+          antialias: true,
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true,
+          backgroundAlpha: 1
+        },
         // Default game logic - can be overridden
         gameLogic: {
           spin: null,  // Will be set to this.defaultSpin if not provided
           calculateWin: null,  // Will be set to this.defaultCalculateWin if not provided
           renderGame: null,  // Will be set to this.defaultRenderGame if not provided
+          renderGameWithPixi: null, // Optional PixiJS renderer
           handleWin: null,  // Will be set to this.defaultHandleWin if not provided
           handleLoss: null  // Will be set to this.defaultHandleLoss if not provided
         },
@@ -374,8 +383,67 @@ class GameFramework {
       // Update dimensions display
       this.elements.dimensionsDisplay.textContent = `${this.canvas.width}×${this.canvas.height}`;
       
+      // Initialize PixiJS if enabled and available
+      if (this.config.usePixi && window.PIXI && window.PixiHelper) {
+        this.initPixi();
+      }
+      
       // Draw canvas content
       this.drawCanvas();
+    }
+    
+    /**
+     * Initialize PixiJS rendering
+     */
+    initPixi() {
+      // Only initialize once
+      if (this.pixiApp) return;
+      
+      try {
+        console.log('Initializing PixiJS application');
+        
+        // Create Pixi application
+        this.pixiApp = PixiHelper.initApp(this.canvas, {
+          backgroundColor: this.getBackgroundColor(),
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true
+        });
+        
+        // Create a container for all game elements
+        this.pixiContainer = PixiHelper.createContainer();
+        this.pixiApp.stage.addChild(this.pixiContainer);
+        
+        // Create a background container
+        this.pixiBackground = PixiHelper.createContainer();
+        this.pixiContainer.addChild(this.pixiBackground);
+        
+        // Create a foreground container for UI elements
+        this.pixiForeground = PixiHelper.createContainer();
+        this.pixiContainer.addChild(this.pixiForeground);
+        
+        console.log('PixiJS initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize PixiJS:', error);
+        this.pixiApp = null;
+      }
+    }
+    
+    /**
+     * Get the background color based on the current theme
+     * @returns {number} - The hex color as a number
+     */
+    getBackgroundColor() {
+      const colors = this.config.canvasBackground && this.config.canvasBackground[this.state.theme] 
+        ? this.config.canvasBackground[this.state.theme]
+        : ['#071824', '#071d2a']; // Default colors
+      
+      // Convert hex to number (assuming first color in gradient)
+      let color = colors[0];
+      // Remove # if present
+      if (color.startsWith('#')) {
+        color = color.slice(1);
+      }
+      return parseInt(color, 16);
     }
   
     /**
@@ -385,6 +453,203 @@ class GameFramework {
       // CRITICAL FIX: Always re-check game logic methods before drawing
       this._ensureGameLogicComplete();
       
+      // Check if we should use PixiJS
+      if (this.pixiApp && this.config.usePixi) {
+        this.drawWithPixi();
+      } else {
+        this.drawWithCanvas2D();
+      }
+    }
+    
+    /**
+     * Draw using the PixiJS renderer
+     */
+    drawWithPixi() {
+      // Clear existing containers
+      this.pixiBackground.removeChildren();
+      
+      // Create background with gradient (using a rectangle)
+      const colors = this.config.canvasBackground && this.config.canvasBackground[this.state.theme] 
+        ? this.config.canvasBackground[this.state.theme]
+        : ['#071824', '#071d2a']; // Default colors
+        
+      // Convert hex to number
+      const color1 = parseInt(colors[0].replace('#', ''), 16);
+      const color2 = parseInt(colors[1].replace('#', ''), 16);
+      
+      // Create gradient background using a rectangle with fill gradient
+      const background = new PIXI.Graphics();
+      
+      // Create vertical or horizontal gradient based on layout
+      if (this.state.layout === 'pc') {
+        // Vertical gradient
+        background.beginTextureFill({
+          texture: this.createGradientTexture(color1, color2, false),
+          alpha: 1
+        });
+      } else {
+        // Horizontal gradient
+        background.beginTextureFill({
+          texture: this.createGradientTexture(color1, color2, true),
+          alpha: 1
+        });
+      }
+      
+      // Draw full-screen rectangle
+      background.drawRect(0, 0, this.canvas.width, this.canvas.height);
+      background.endFill();
+      
+      // Add to background container
+      this.pixiBackground.addChild(background);
+      
+      // Draw grid if in debug mode
+      if (window.debugManager && window.debugManager.isDebugEnabled) {
+        this.drawGridWithPixi();
+      }
+      
+      // Call the game's render function with safety check
+      if (this.config && this.config.gameLogic) {
+        try {
+          // Check if there's a dedicated Pixi renderer in the game logic
+          if (typeof this.config.gameLogic.renderGameWithPixi === 'function') {
+            this.config.gameLogic.renderGameWithPixi(this.pixiApp, this.pixiContainer, this.canvas.width, this.canvas.height, this.state);
+          } else if (typeof this.config.gameLogic.renderGame === 'function') {
+            // Fall back to Canvas2D rendering if no Pixi renderer is provided
+            this.drawWithCanvas2D();
+          }
+        } catch (error) {
+          console.error('Error in game renderGameWithPixi:', error);
+          this.renderFallbackGameWithPixi();
+        }
+      } else {
+        this.renderFallbackGameWithPixi();
+      }
+    }
+    
+    /**
+     * Create a gradient texture for Pixi
+     */
+    createGradientTexture(color1, color2, horizontal = false) {
+      const quality = 256;
+      const canvas = document.createElement('canvas');
+      
+      if (horizontal) {
+        canvas.width = quality;
+        canvas.height = 1;
+      } else {
+        canvas.width = 1;
+        canvas.height = quality;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      
+      // Create gradient
+      const gradient = horizontal 
+        ? ctx.createLinearGradient(0, 0, quality, 0)
+        : ctx.createLinearGradient(0, 0, 0, quality);
+        
+      // Convert numbers back to hex strings for canvas
+      const hex1 = '#' + color1.toString(16).padStart(6, '0');
+      const hex2 = '#' + color2.toString(16).padStart(6, '0');
+      
+      gradient.addColorStop(0, hex1);
+      gradient.addColorStop(1, hex2);
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      return PIXI.Texture.from(canvas);
+    }
+    
+    /**
+     * Draw grid using PixiJS
+     */
+    drawGridWithPixi() {
+      const gridGraphics = new PIXI.Graphics();
+      gridGraphics.lineStyle(1, 0xFFFFFF, 0.1);
+      
+      // Vertical grid lines
+      for (let x = 0; x < this.canvas.width; x += 100) {
+        gridGraphics.moveTo(x, 0);
+        gridGraphics.lineTo(x, this.canvas.height);
+      }
+      
+      // Horizontal grid lines
+      for (let y = 0; y < this.canvas.height; y += 100) {
+        gridGraphics.moveTo(0, y);
+        gridGraphics.lineTo(this.canvas.width, y);
+      }
+      
+      this.pixiBackground.addChild(gridGraphics);
+    }
+    
+    /**
+     * Render fallback game using PixiJS
+     */
+    renderFallbackGameWithPixi() {
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+      
+      // Game title
+      const titleText = PixiHelper.createText(
+        this.config.gameTitle || 'Game Prototype',
+        {
+          fontFamily: 'Arial',
+          fontSize: 48,
+          fontWeight: 'bold',
+          fill: 0xFFD700,
+          align: 'center'
+        },
+        {
+          x: centerX,
+          y: centerY - 80,
+          anchor: 0.5
+        }
+      );
+      
+      // Instructions
+      const instructionsText = PixiHelper.createText(
+        'Game is initializing...',
+        {
+          fontFamily: 'Arial',
+          fontSize: 24,
+          fill: 0xFFFFFF,
+          align: 'center'
+        },
+        {
+          x: centerX,
+          y: centerY,
+          anchor: 0.5
+        }
+      );
+      
+      // Click to play
+      const clickText = PixiHelper.createText(
+        'Click SPIN to play',
+        {
+          fontFamily: 'Arial',
+          fontSize: 18,
+          fill: 0xFFFFFF,
+          alpha: 0.6,
+          align: 'center'
+        },
+        {
+          x: centerX,
+          y: centerY + 50,
+          anchor: 0.5
+        }
+      );
+      
+      // Add to container
+      this.pixiForeground.addChild(titleText);
+      this.pixiForeground.addChild(instructionsText);
+      this.pixiForeground.addChild(clickText);
+    }
+    
+    /**
+     * Draw using the Canvas 2D API (original implementation)
+     */
+    drawWithCanvas2D() {
       // Clear canvas
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       
