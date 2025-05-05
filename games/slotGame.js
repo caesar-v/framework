@@ -165,9 +165,12 @@ class SlotGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
-      // Add debug information about the configuration and reelState
-      console.log('SlotGame.renderGame - config:', this.config);
-      console.log('SlotGame.renderGame - reelState:', this.reelState);
+      // Use static flag to prevent excessive logging - log only once
+      if (!this._loggedRenderInfo) {
+        console.log('SlotGame.renderGame - Initial render - config:', this.config);
+        console.log('SlotGame.renderGame - Initial render - reelState:', this.reelState);
+        this._loggedRenderInfo = true;
+      }
       
       const centerX = width / 2;
       const centerY = height / 2;

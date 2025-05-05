@@ -70,10 +70,16 @@ class GameLoader {
   }
 
   loadGame(gameType) {
+    // Prevent loading in progress from being triggered multiple times
+    if (this._loadingInProgress === gameType) {
+      console.log(`Already loading ${gameType}, ignoring duplicate request`);
+      return;
+    }
+    
     console.log(`Loading game: ${gameType}`);
     
     // If already loaded, just activate it
-    if (this.gameInstances[gameType]) {
+    if (this.gameInstances[gameType] && this.gameInstances[gameType].game) {
       console.log(`Game ${gameType} already loaded, activating it`);
       this.activateGame(gameType);
       return;
@@ -85,13 +91,12 @@ class GameLoader {
       return;
     }
 
+    // Set loading flag
+    this._loadingInProgress = gameType;
+    
     try {
       const className = this.gameRegistry[gameType].class;
       console.log(`Looking for game class: ${className}`);
-      
-      // Verify the game class exists in the global scope
-      const availableClasses = Object.keys(window).filter(k => k.includes('Game'));
-      console.log('Available game classes:', availableClasses);
       
       // Get game class constructor
       const GameClass = window[className];
@@ -106,12 +111,17 @@ class GameLoader {
             console.log(`Game class ${className} found after retry!`);
             try {
               this.gameInstances[gameType] = new retryGameClass();
-              this.activateGame(gameType);
+              // Clear the loading flag
+              this._loadingInProgress = null;
+              // Activate the game after a short delay to let it initialize
+              setTimeout(() => this.activateGame(gameType), 100);
             } catch (retryError) {
               console.error(`Failed to create game instance on retry:`, retryError);
+              this._loadingInProgress = null;
             }
           } else {
             console.error(`Game class ${className} still not found after retry`);
+            this._loadingInProgress = null;
           }
         }, 500);
         
@@ -119,66 +129,148 @@ class GameLoader {
       }
       
       console.log(`Creating new instance of ${className}`);
-      this.gameInstances[gameType] = new GameClass();
-
-      // Activate the game
-      this.activateGame(gameType);
-
-      console.log(`Loaded ${gameType} game successfully`);
+      
+      // Create a try/catch block for each game initialization
+      try {
+        this.gameInstances[gameType] = new GameClass();
+        
+        // Wait for a moment to allow game to fully initialize
+        setTimeout(() => {
+          // Check if game framework is ready
+          if (this.gameInstances[gameType].game) {
+            console.log(`${gameType} game framework initialized successfully`);
+            this.activateGame(gameType);
+          } else {
+            console.warn(`${gameType} game framework not initialized yet, waiting...`);
+            // Wait a bit more and check again
+            setTimeout(() => {
+              if (this.gameInstances[gameType].game) {
+                this.activateGame(gameType);
+              } else {
+                console.error(`Failed to initialize ${gameType} game framework`);
+              }
+              this._loadingInProgress = null;
+            }, 500);
+          }
+        }, 100);
+        
+        console.log(`Loaded ${gameType} game successfully`);
+      } catch (innerError) {
+        console.error(`Failed to create ${gameType} game instance:`, innerError);
+        this._loadingInProgress = null;
+      }
     } catch (error) {
       console.error(`Failed to load game ${gameType}:`, error);
       console.error('Error details:', error.message);
+      this._loadingInProgress = null;
     }
   }
 
   activateGame(gameType) {
+    console.log(`Attempting to activate game: ${gameType}`);
+    
+    // Make sure the game instance exists
+    if (!this.gameInstances[gameType]) {
+      console.error(`Cannot activate ${gameType} - game instance not found`);
+      return;
+    }
+    
+    // Make sure the game instance has a game property
+    if (!this.gameInstances[gameType].game) {
+      console.error(`Cannot activate ${gameType} - game framework not initialized`);
+      // Try to load it again
+      setTimeout(() => this.loadGame(gameType), 300);
+      return;
+    }
+    
     // Don't do anything if it's already the active game
     if (this.activeGame === this.gameInstances[gameType]) {
+      console.log(`${gameType} is already the active game`);
       return;
     }
 
     // Save current game state if there is an active game
     if (this.activeGame) {
-      // Get the current game type
-      const currentGameType = Object.keys(this.gameInstances).find(
-        key => this.gameInstances[key] === this.activeGame
-      );
-      if (currentGameType) {
-        this.saveGameState(currentGameType);
-      }
+      console.log(`Switching from existing game to ${gameType}`);
+      
+      try {
+        // Get the current game type
+        const currentGameType = Object.keys(this.gameInstances).find(
+          key => this.gameInstances[key] === this.activeGame
+        );
+        
+        if (currentGameType) {
+          this.saveGameState(currentGameType);
+        }
 
-      // Add a fade-out animation
-      const container = document.querySelector('#game-container');
-      container.classList.add('fade-out');
+        // Add a fade-out animation
+        const container = document.querySelector('#game-container');
+        if (container) {
+          container.classList.add('fade-out');
+        }
 
-      // Wait for animation to complete
-      setTimeout(() => {
-        // Set new active game
-        this.activeGame = this.gameInstances[gameType];
-
-        // Restore its state
-        this.restoreGameState(gameType);
-
-        // Update game title and reload UI
-        document.querySelector('.game-title').textContent =
-          this.gameRegistry[gameType].name;
-
-        // Redraw everything
-        this.activeGame.game.drawCanvas();
-
-        // Remove fade-out and add fade-in
-        container.classList.remove('fade-out');
-        container.classList.add('fade-in');
-
-        // Remove fade-in class after animation completes
+        // Wait for animation to complete
         setTimeout(() => {
-          container.classList.remove('fade-in');
-        }, 500);
-      }, 300);
+          try {
+            // Set new active game
+            this.activeGame = this.gameInstances[gameType];
+
+            // Restore its state
+            this.restoreGameState(gameType);
+
+            // Update game title and reload UI
+            const titleElement = document.querySelector('.game-title');
+            if (titleElement) {
+              titleElement.textContent = this.gameRegistry[gameType].name;
+            }
+
+            // Redraw everything if game has a drawCanvas method
+            if (this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
+              this.activeGame.game.drawCanvas();
+            } else {
+              console.warn(`${gameType} game doesn't have a drawCanvas method`);
+            }
+
+            // Remove fade-out and add fade-in
+            if (container) {
+              container.classList.remove('fade-out');
+              container.classList.add('fade-in');
+
+              // Remove fade-in class after animation completes
+              setTimeout(() => {
+                container.classList.remove('fade-in');
+              }, 500);
+            }
+            
+            console.log(`Successfully activated ${gameType}`);
+            
+            // Update the game selector value to match the current game
+            if (this.gameSelector && this.gameSelector.value !== gameType) {
+              this.gameSelector.value = gameType;
+            }
+          } catch (error) {
+            console.error(`Error during game activation phase 2:`, error);
+          }
+        }, 300);
+      } catch (error) {
+        console.error(`Error during game activation phase 1:`, error);
+      }
     } else {
       // No active game, just set the new one
-      this.activeGame = this.gameInstances[gameType];
-      this.restoreGameState(gameType);
+      console.log(`No active game, setting ${gameType} as active`);
+      try {
+        this.activeGame = this.gameInstances[gameType];
+        this.restoreGameState(gameType);
+        
+        // Update the game selector value to match the current game
+        if (this.gameSelector && this.gameSelector.value !== gameType) {
+          this.gameSelector.value = gameType;
+        }
+        
+        console.log(`Successfully activated ${gameType} (no previous game)`);
+      } catch (error) {
+        console.error(`Error during initial game activation:`, error);
+      }
     }
   }
 

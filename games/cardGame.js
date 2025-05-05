@@ -467,10 +467,13 @@ class CardGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
-      // Add debug information
-      console.log('CardGame.renderGame - config:', this.config);
-      console.log('CardGame.renderGame - cards:', this.cards);
-      console.log('CardGame.renderGame - cardPositions:', this.cardPositions);
+      // Use static flag to prevent excessive logging - log only once
+      if (!this._loggedRenderInfo) {
+        console.log('CardGame.renderGame - Initial render - config:', this.config);
+        console.log('CardGame.renderGame - Initial render - cards:', this.cards);
+        console.log('CardGame.renderGame - Initial render - cardPositions:', this.cardPositions);
+        this._loggedRenderInfo = true;
+      }
       
       const centerX = width / 2;
       const centerY = height / 2;

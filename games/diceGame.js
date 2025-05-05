@@ -119,19 +119,40 @@ class DiceGame extends BaseGame {
       // Increment animation phase
       this.animationPhase += 0.02;
       
-      // Update dice rotations for idle animation
-      for (let i = 0; i < this.diceRotations.length; i++) {
-        // Gentle rotation for idle animation
-        this.diceRotations[i].x += 0.2 * Math.sin(this.animationPhase + i);
-        this.diceRotations[i].y += 0.3 * Math.cos(this.animationPhase * 0.7 + i);
+      // Make sure diceRotations is initialized
+      if (this.diceRotations && this.diceRotations.length > 0) {
+        // Update dice rotations for idle animation
+        for (let i = 0; i < this.diceRotations.length; i++) {
+          if (this.diceRotations[i]) {
+            // Gentle rotation for idle animation
+            this.diceRotations[i].x += 0.2 * Math.sin(this.animationPhase + i);
+            this.diceRotations[i].y += 0.3 * Math.cos(this.animationPhase * 0.7 + i);
+          }
+        }
       }
       
-      // Request next frame
-      requestAnimationFrame(() => this.animate());
+      // Request next frame - using a more stable approach with error handling
+      try {
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(() => {
+            try {
+              this.animate();
+            } catch (animError) {
+              console.error("Animation loop error:", animError);
+            }
+          });
+        }
+      } catch (rafError) {
+        console.error("Error requesting animation frame:", rafError);
+      }
       
       // Redraw only if game is initialized and not spinning
-      if (this.game && !this.game.state.isSpinning) {
-        this.game.drawCanvas();
+      if (this.game && this.game.state && !this.game.state.isSpinning) {
+        try {
+          this.game.drawCanvas();
+        } catch (drawError) {
+          console.error("Error drawing canvas:", drawError);
+        }
       }
     }
     
@@ -381,10 +402,13 @@ class DiceGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
-      // Add debug information
-      console.log('DiceGame.renderGame - config:', this.config);
-      console.log('DiceGame.renderGame - diceValues:', this.diceValues);
-      console.log('DiceGame.renderGame - dicePositions:', this.dicePositions);
+      // Use static flag to prevent excessive logging - log only once
+      if (!this._loggedRenderInfo) {
+        console.log('DiceGame.renderGame - Initial render - config:', this.config);
+        console.log('DiceGame.renderGame - Initial render - diceValues:', this.diceValues);
+        console.log('DiceGame.renderGame - Initial render - dicePositions:', this.dicePositions);
+        this._loggedRenderInfo = true;
+      }
       
       const centerX = width / 2;
       const centerY = height / 2;
