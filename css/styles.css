@@ -359,6 +359,8 @@
     bottom: 0;
     background-color: rgba(7, 29, 42, 0.9);
     padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
   }
   
   /* Control panels */
@@ -447,7 +449,7 @@
     display: flex;
     gap: var(--spacing-sm);
     margin-top: var(--spacing-sm);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: space-between; /* Evenly distribute */
   }
   
@@ -465,8 +467,14 @@
     min-width: 50px;
   }
   
-  .quick-bet-wide {
-    flex: 2; /* Wider for special buttons */
+  /* Style for the ×2 bet button to stand out */
+  #double-bet {
+    background-color: var(--color-primary);
+    color: var(--color-foreground);
+  }
+  
+  #double-bet:hover {
+    background-color: var(--color-primary-hover);
   }
   
   .quick-bet:hover {
@@ -578,6 +586,12 @@
     color: var(--color-foreground);
   }
   
+  .play-mode-section {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--spacing-md);
+  }
+  
   .play-mode-tabs {
     display: flex;
     border-radius: var(--radius-full);
@@ -602,6 +616,43 @@
   .play-mode-tab.active {
     background-color: var(--color-primary);
     color: var(--color-foreground);
+  }
+  
+  /* Order of elements in PC layout */
+  .pc .bet-panel {
+    order: 2;
+  }
+  
+  .pc .risk-panel {
+    order: 3;
+  }
+  
+  .pc .play-area {
+    order: 4;
+  }
+  
+  /* In PC layout, put play mode tabs at the top */
+  .pc .play-mode-section {
+    order: 1;
+  }
+  
+  /* Order of elements in mobile layout */
+  .mobile .bet-panel {
+    order: 1;
+  }
+  
+  .mobile .risk-panel {
+    order: 2;
+  }
+  
+  .mobile .play-area {
+    order: 3;
+  }
+  
+  /* In mobile layout, put play mode tabs below the profit panel (at the bottom) */
+  .mobile .play-mode-section {
+    order: 4;
+    margin-top: var(--spacing-md);
   }
   
   /* Footer */

@@ -76,8 +76,10 @@
         </div>
         
         <div class="controls-area">
+          <!-- Play-mode sections will be positioned differently in PC and mobile layouts via CSS order -->
+          
           <!-- Bet Amount Panel -->
-          <div class="control-panel">
+          <div class="control-panel bet-panel">
             <div class="control-panel-header">
               <span class="control-panel-title">Bet Amount</span>
             </div>
@@ -88,15 +90,9 @@
               <button class="btn btn-outline" id="increase-bet">+</button>
             </div>
             <div class="quick-bets">
-              <button class="quick-bet" data-bet="5">5</button>
-              <button class="quick-bet" data-bet="10">10</button>
-              <button class="quick-bet" data-bet="25">25</button>
-              <button class="quick-bet" data-bet="50">50</button>
-              <button class="quick-bet" data-bet="100">100</button>
-            </div>
-            <div class="quick-bets">
-              <button class="quick-bet quick-bet-wide" id="half-bet">1/2 Bet</button>
-              <button class="quick-bet quick-bet-wide" id="max-bet">Max Bet</button>
+              <button class="quick-bet" id="half-bet">1/2 Bet</button>
+              <button class="quick-bet" id="double-bet">×2 Bet</button>
+              <button class="quick-bet" id="max-bet">Max Bet</button>
             </div>
           </div>
           
@@ -121,8 +117,10 @@
               <span class="profit-label">Profit on Win</span>
               <span class="profit-value" id="potential-win">30.00 €</span>
             </div>
-            
-            <!-- Play Mode Toggle (Manual/Auto) -->
+          </div>
+          
+          <!-- Play Mode Toggle (Manual/Auto) - Position will be controlled by CSS -->
+          <div class="play-mode-section">
             <div class="play-mode-tabs">
               <button class="play-mode-tab active" id="manual-tab">Manual</button>
               <button class="play-mode-tab" id="auto-tab">Auto</button>

@@ -125,6 +125,7 @@ class GameFramework {
         decreaseBet: document.getElementById('decrease-bet'),
         increaseBet: document.getElementById('increase-bet'),
         halfBet: document.getElementById('half-bet'),
+        doubleBet: document.getElementById('double-bet'),
         maxBet: document.getElementById('max-bet'),
         quickBets: document.querySelectorAll('.quick-bet'),
         riskLevel: document.getElementById('risk-level'),
@@ -331,6 +332,7 @@ class GameFramework {
       });
   
       safeAddEventListener(this.elements.halfBet, 'click', () => this.setHalfBet());
+      safeAddEventListener(this.elements.doubleBet, 'click', () => this.setDoubleBet());
       safeAddEventListener(this.elements.maxBet, 'click', () => this.setMaxBet());
   
       // Quick bet buttons
@@ -638,6 +640,18 @@ class GameFramework {
     setHalfBet() {
       if (this.state.isSpinning) return;
       this.state.betAmount = Math.max(1, Math.floor(this.state.betAmount / 2));
+      this.elements.betInput.value = this.state.betAmount;
+      this.updatePotentialWin();
+    }
+    
+    /**
+     * Double the current bet amount
+     */
+    setDoubleBet() {
+      if (this.state.isSpinning) return;
+      // Double the current bet, but don't exceed max bet or current balance
+      const doubled = this.state.betAmount * 2;
+      this.state.betAmount = Math.min(doubled, this.state.maxBet, this.state.balance);
       this.elements.betInput.value = this.state.betAmount;
       this.updatePotentialWin();
     }
