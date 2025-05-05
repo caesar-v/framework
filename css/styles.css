@@ -365,6 +365,11 @@
   }
   
   /* This !important will be removed by the JS when user logs in */
+  /* Special case for chat panel to ensure it works with grid layout */
+  .chat-panel.user-only-element.active {
+    opacity: 1 !important;
+    max-width: 350px !important;
+  }
   
   .header-right {
     display: flex;

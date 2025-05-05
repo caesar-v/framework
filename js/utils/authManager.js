@@ -211,9 +211,9 @@ class AuthManager {
         display: flex !important;
       }
       .user-only-element.chat-panel {
-        display: block !important;
-        opacity: 0;
+        display: block !important; 
       }
+      /* Do not set opacity directly, let the chat manager handle it */
     `;
     document.head.appendChild(styleElement);
     

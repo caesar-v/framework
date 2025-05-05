@@ -69,6 +69,21 @@ class ChatPanelManager {
     // Listen for window resize to adjust panel
     window.addEventListener('resize', () => this.handleResize());
     
+    // Ensure chat is initially closed
+    this.closeChat();
+    
+    // Check if auth is already available and user logged in
+    setTimeout(() => {
+      if (window.authManager && window.authManager.isUserLoggedIn()) {
+        // Make panel visible (but not open) for logged-in users
+        if (this.elements.panel) {
+          this.elements.panel.style.display = '';
+          this.elements.panel.style.opacity = '0';
+          this.elements.panel.style.maxWidth = '0';
+        }
+      }
+    }, 500);
+    
     console.log('Chat Panel initialized successfully');
   }
   
@@ -123,7 +138,10 @@ class ChatPanelManager {
     window.addEventListener('userLogin', () => {
       // Make chat panel available but don't open it automatically
       if (this.elements.panel) {
-        this.elements.panel.classList.remove('hidden');
+        // Keep the panel collapsed but make it available
+        this.elements.panel.style.display = '';
+        this.elements.panel.style.opacity = '0';
+        this.elements.panel.style.maxWidth = '0';
       }
     });
     
@@ -131,7 +149,8 @@ class ChatPanelManager {
       // Close chat if open and hide panel
       this.closeChat();
       if (this.elements.panel) {
-        this.elements.panel.classList.add('hidden');
+        // Completely hide the panel for logged out users
+        this.elements.panel.style.display = 'none';
       }
     });
   }
@@ -151,8 +170,18 @@ class ChatPanelManager {
    * Open the chat panel
    */
   openChat() {
+    // First check if user is logged in
+    if (window.authManager && !window.authManager.isUserLoggedIn()) {
+      console.log('Cannot open chat - user not logged in');
+      return; // Don't open chat if user is not logged in
+    }
+    
     if (this.elements.panel) {
       this.elements.panel.classList.add(this.config.activePanelClass);
+      // Force display and opacity for the panel
+      this.elements.panel.style.display = '';
+      this.elements.panel.style.opacity = '1';
+      this.elements.panel.style.maxWidth = '350px';
     }
     
     if (this.elements.playground) {
@@ -187,6 +216,15 @@ class ChatPanelManager {
   closeChat() {
     if (this.elements.panel) {
       this.elements.panel.classList.remove(this.config.activePanelClass);
+      // For logged in users, we keep the panel available but collapsed
+      if (window.authManager && window.authManager.isUserLoggedIn()) {
+        this.elements.panel.style.display = '';
+        this.elements.panel.style.opacity = '0';
+        this.elements.panel.style.maxWidth = '0';
+      } else {
+        // For logged out users, hide it completely
+        this.elements.panel.style.display = 'none';
+      }
     }
     
     if (this.elements.playground) {
