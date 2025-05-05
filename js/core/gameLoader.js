@@ -55,20 +55,13 @@ class GameLoader {
     }
     
     if (this.gameSelector) {
-      // Set up event listener for game switching - with improved handling
+      // Set up a simple, direct event listener for game switching
       this.gameSelector.addEventListener('change', () => {
         const selectedGameType = this.gameSelector.value;
         console.log('Game selection changed to:', selectedGameType);
         
-        // Force activation even if game is already loaded
-        if (this.gameInstances[selectedGameType]) {
-          // If the game is already loaded, directly activate it 
-          // instead of going through the loading process
-          this.forceActivateGame(selectedGameType);
-        } else {
-          // Regular load for new games
-          this.loadGame(selectedGameType);
-        }
+        // Use the simplest approach - force recreate the game from scratch
+        this.forceCreateNewGame(selectedGameType);
       });
       
       // Load the default game
@@ -76,6 +69,118 @@ class GameLoader {
       this.loadGame(this.gameSelector.value);
     } else {
       console.error('Game selector not found, cannot load games');
+    }
+  }
+  
+  /**
+   * Force create a new game instance without any caching
+   */
+  forceCreateNewGame(gameType) {
+    console.log(`Forcing creation of new game instance: ${gameType}`);
+    
+    try {
+      // First clean up any active game
+      if (this.activeGame) {
+        this.activeGame = null;
+      }
+      
+      // Remove any cached instance
+      if (this.gameInstances[gameType]) {
+        delete this.gameInstances[gameType];
+      }
+      
+      // Check if game type exists in registry
+      if (!this.gameRegistry[gameType]) {
+        console.error('Unknown game type:', gameType);
+        return;
+      }
+      
+      // Get the class name from registry
+      const className = this.gameRegistry[gameType].class;
+      console.log(`Creating new instance of ${className}`);
+      
+      // Get game class constructor
+      const GameClass = window[className];
+      
+      if (!GameClass) {
+        console.error(`Game class ${className} not found!`);
+        return;
+      }
+      
+      // Create new instance
+      this.gameInstances[gameType] = new GameClass();
+      
+      // Set as active game
+      this.activeGame = this.gameInstances[gameType];
+      
+      // Update selector to match
+      if (this.gameSelector && this.gameSelector.value !== gameType) {
+        this.gameSelector.value = gameType;
+      }
+      
+      // Update title
+      const titleElement = document.querySelector('.game-title');
+      if (titleElement && this.gameRegistry[gameType]) {
+        titleElement.textContent = this.gameRegistry[gameType].name;
+      }
+      
+      console.log(`Successfully created and activated new ${gameType} game`);
+      
+    } catch (error) {
+      console.error(`Error creating new game instance:`, error);
+    }
+  }
+  
+  /**
+   * New method to explicitly force a game switch
+   */
+  switchToGame(gameType) {
+    console.log(`Explicit game switch to: ${gameType}`);
+    
+    // Try to clean up any existing game
+    this.cleanupCurrentGame();
+    
+    // Check if we've already loaded this game
+    if (this.gameInstances[gameType]) {
+      console.log(`Game ${gameType} already loaded, destroying and recreating`);
+      
+      // Completely remove existing instance to force a clean state
+      delete this.gameInstances[gameType];
+    }
+    
+    // Load the game as new
+    this.loadGame(gameType);
+  }
+  
+  /**
+   * Clean up the current game if needed
+   */
+  cleanupCurrentGame() {
+    if (this.activeGame) {
+      try {
+        console.log('Cleaning up current game');
+        
+        // Try to save state if needed
+        const currentGameType = Object.keys(this.gameInstances).find(
+          key => this.gameInstances[key] === this.activeGame
+        );
+        
+        if (currentGameType) {
+          this.saveGameState(currentGameType);
+        }
+        
+        // Help with garbage collection
+        if (this.activeGame.game) {
+          // Clean up any animation frame requests
+          if (this.activeGame.animationId) {
+            cancelAnimationFrame(this.activeGame.animationId);
+          }
+        }
+        
+        this.activeGame = null;
+      } catch (e) {
+        console.error('Error during game cleanup:', e);
+      }
     }
   }
   
@@ -126,13 +231,19 @@ class GameLoader {
   }
 
   loadGame(gameType) {
-    // Prevent loading in progress from being triggered multiple times
-    if (this._loadingInProgress === gameType) {
-      console.log(`Already loading ${gameType}, ignoring duplicate request`);
-      return;
+    console.log(`Loading game: ${gameType}`);
+    
+    // Always update the selector to match
+    if (this.gameSelector && this.gameSelector.value !== gameType) {
+      this.gameSelector.value = gameType;
     }
     
-    console.log(`Loading game: ${gameType}`);
+    // Special handling for slot game - always do a complete reload
+    // This ensures slot game can always be switched to reliably
+    if (gameType === 'slot' && this.gameInstances[gameType]) {
+      console.log(`Forcing complete reload of slot game for reliability`);
+      delete this.gameInstances[gameType];
+    }
     
     // If already loaded, just activate it
     if (this.gameInstances[gameType] && this.gameInstances[gameType].game) {
@@ -192,6 +303,12 @@ class GameLoader {
         
         // Wait for a moment to allow game to fully initialize
         setTimeout(() => {
+          // Update selector to match the game being loaded
+          if (this.gameSelector && this.gameSelector.value !== gameType) {
+            console.log(`Updating game selector to ${gameType}`);
+            this.gameSelector.value = gameType;
+          }
+          
           // Check if game framework is ready
           if (this.gameInstances[gameType].game) {
             console.log(`${gameType} game framework initialized successfully`);
@@ -223,100 +340,69 @@ class GameLoader {
   }
 
   /**
-   * Activate a game with transition effects
-   * This is a specialized version for use with forceActivateGame
+   * Simple direct activation without complex animations or state tracking
    */
   activateGameWithEffects(gameType) {
-    console.log(`Activating game with effects: ${gameType}`);
+    console.log(`Activating game: ${gameType}`);
     
     // Before we start, make sure the game instance is properly initialized
     if (!this.gameInstances[gameType] || !this.gameInstances[gameType].game) {
-      console.error(`Game ${gameType} or its framework is not initialized, retrying load`);
-      this.loadGame(gameType);
+      console.error(`Cannot activate - game ${gameType} is not fully initialized`);
       return;
     }
     
-    // Get the container for animation
-    const container = document.querySelector('#game-container');
-    
-    // Set a flag to track animation in progress
-    this._animationInProgress = true;
-    
-    // Apply fade-out effect if container exists
-    if (container) {
-      container.classList.add('fade-out');
-      // Remove any existing fade-in class
-      container.classList.remove('fade-in');
-    }
-    
-    // Prepare timeout for the transition
-    this._activationTimeout = setTimeout(() => {
-      try {
-        // Save state of current game if any
-        if (this.activeGame) {
-          const currentGameType = Object.keys(this.gameInstances).find(
-            key => this.gameInstances[key] === this.activeGame
-          );
-          if (currentGameType) {
-            this.saveGameState(currentGameType);
-          }
+    try {
+      // Save state of current game if any
+      if (this.activeGame) {
+        const currentGameType = Object.keys(this.gameInstances).find(
+          key => this.gameInstances[key] === this.activeGame
+        );
+        if (currentGameType) {
+          this.saveGameState(currentGameType);
         }
-        
-        // Update active game
-        this.activeGame = this.gameInstances[gameType];
-        
-        // Restore game state
-        this.restoreGameState(gameType);
-        
-        // Update title
-        const titleElement = document.querySelector('.game-title');
-        if (titleElement && this.gameRegistry[gameType]) {
-          titleElement.textContent = this.gameRegistry[gameType].name;
-        }
-        
-        // Redraw the game canvas
-        if (this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
-          this.activeGame.game.drawCanvas();
-        }
-        
-        // Apply fade-in effect
-        if (container) {
-          container.classList.remove('fade-out');
-          container.classList.add('fade-in');
-          
-          // Remove fade-in class after animation completes
-          setTimeout(() => {
-            container.classList.remove('fade-in');
-            this._animationInProgress = false;
-          }, 500);
-        } else {
-          this._animationInProgress = false;
-        }
-        
-        // Update selector
-        if (this.gameSelector && this.gameSelector.value !== gameType) {
-          this.gameSelector.value = gameType;
-        }
-        
-        console.log(`Successfully activated ${gameType} with effects`);
-      } catch (error) {
-        console.error(`Error during game activation with effects:`, error);
-        this._animationInProgress = false;
       }
-    }, 300);
+      
+      // Get the container for basic animation
+      const container = document.querySelector('#game-container');
+      if (container) {
+        container.style.opacity = '0.5';
+        setTimeout(() => {
+          container.style.opacity = '1';
+        }, 300);
+      }
+      
+      // Update active game - CRITICAL STEP
+      this.activeGame = this.gameInstances[gameType];
+      
+      // Update selector if needed
+      if (this.gameSelector && this.gameSelector.value !== gameType) {
+        this.gameSelector.value = gameType;
+      }
+      
+      // Update title
+      const titleElement = document.querySelector('.game-title');
+      if (titleElement && this.gameRegistry[gameType]) {
+        titleElement.textContent = this.gameRegistry[gameType].name;
+      }
+      
+      // Restore state
+      this.restoreGameState(gameType);
+      
+      // Redraw the game canvas
+      if (this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
+        this.activeGame.game.drawCanvas();
+      }
+      
+      console.log(`Successfully activated ${gameType}`);
+    } catch (error) {
+      console.error(`Error during game activation:`, error);
+    }
   }
   
   /**
    * Standard activation method used by loadGame
    */
   activateGame(gameType) {
-    // If force activation is already running, don't interfere
-    if (this._animationInProgress) {
-      console.log(`Animation in progress, deferring normal activation`);
-      setTimeout(() => this.activateGame(gameType), 600);
-      return;
-    }
-    
     console.log(`Attempting to activate game: ${gameType}`);
     
     // Make sure the game instance exists
@@ -328,8 +414,15 @@ class GameLoader {
     // Make sure the game instance has a game property
     if (!this.gameInstances[gameType].game) {
       console.error(`Cannot activate ${gameType} - game framework not initialized`);
-      // Try to load it again
-      this._loadingTimeout = setTimeout(() => this.loadGame(gameType), 300);
+      // We'll give it a bit more time to initialize
+      setTimeout(() => {
+        if (this.gameInstances[gameType] && this.gameInstances[gameType].game) {
+          console.log(`Game ${gameType} initialized after delay, activating now`);
+          this.activateGameWithEffects(gameType);
+        } else {
+          console.error(`Game ${gameType} failed to initialize properly`);
+        }
+      }, 500);
       return;
     }
     

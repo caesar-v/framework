@@ -258,17 +258,9 @@
       
       button.addEventListener('click', function() {
         if (window.gameLoader) {
-          // Reset any stuck states
-          window.gameLoader.resetGameLoader();
-          
-          // Force activate the game
-          if (window.gameLoader.gameInstances[gameType]) {
-            window.gameLoader.forceActivateGame(gameType);
-            showStatusMessage(`Switched to ${label}`);
-          } else {
-            window.gameLoader.loadGame(gameType);
-            showStatusMessage(`Loading ${label}...`);
-          }
+          // Always create a fresh instance to ensure reliable switching
+          window.gameLoader.forceCreateNewGame(gameType);
+          showStatusMessage(`Switched to ${label}`);
         } else {
           showStatusMessage('Game loader not found!', true);
         }
