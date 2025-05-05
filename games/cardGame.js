@@ -61,11 +61,18 @@ class CardGame extends BaseGame {
      * Create a shuffled deck of cards
      */
     initDeck() {
+      console.log('CardGame.initDeck - Starting initialization');
+
+      // Add fallbacks for core card properties
+      const suits = this.config && this.config.suits ? this.config.suits : ['♥', '♦', '♠', '♣'];
+      const values = this.config && this.config.values ? this.config.values : ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+      const numCards = this.config && this.config.numCards ? this.config.numCards : 5;
+      
       // Create a full deck
       const deck = [];
       
-      for (const suit of this.config.suits) {
-        for (const value of this.config.values) {
+      for (const suit of suits) {
+        for (const value of values) {
           deck.push({ suit, value });
         }
       }
@@ -80,7 +87,8 @@ class CardGame extends BaseGame {
       this.cardPositions = [];
       
       // Deal initial cards
-      for (let i = 0; i < this.config.numCards; i++) {
+      const cardsToDeal = Math.min(numCards, deck.length);
+      for (let i = 0; i < cardsToDeal; i++) {
         this.cards.push(deck.pop());
         this.flipped.push(false);
         this.selectedCards.push(false);
@@ -93,6 +101,12 @@ class CardGame extends BaseGame {
           scale: 1
         });
       }
+      
+      console.log('CardGame.initDeck - Deck initialized:', {
+        cards: this.cards,
+        positions: this.cardPositions,
+        config: this.config
+      });
     }
     
     /**
@@ -453,6 +467,11 @@ class CardGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
+      // Add debug information
+      console.log('CardGame.renderGame - config:', this.config);
+      console.log('CardGame.renderGame - cards:', this.cards);
+      console.log('CardGame.renderGame - cardPositions:', this.cardPositions);
+      
       const centerX = width / 2;
       const centerY = height / 2;
       
@@ -472,23 +491,45 @@ class CardGame extends BaseGame {
       ctx.textBaseline = 'middle';
       ctx.fillText('Card Master', centerX, centerY - 350);
       
-      // Draw cards
-      const cardSpacing = this.config.cardWidth * 1.2;
-      const startX = centerX - (cardSpacing * (this.config.numCards - 1)) / 2;
+      // Add fallbacks for card dimensions
+      const cardWidth = this.config && this.config.cardWidth ? this.config.cardWidth : 120;
+      const cardHeight = this.config && this.config.cardHeight ? this.config.cardHeight : 180;
+      const numCards = this.config && this.config.numCards ? this.config.numCards : 5;
       
-      for (let i = 0; i < this.cards.length; i++) {
-        const position = this.cardPositions[i];
-        this.renderCard(
-          ctx,
-          startX + i * cardSpacing,
-          centerY,
-          this.config.cardWidth,
-          this.config.cardHeight,
-          this.cards[i],
-          this.flipped[i],
-          this.selectedCards[i],
-          position
-        );
+      // Draw cards only if they exist
+      const cardSpacing = cardWidth * 1.2;
+      const startX = centerX - (cardSpacing * (numCards - 1)) / 2;
+      
+      // Ensure cards array exists before iterating
+      if (this.cards && this.cards.length > 0) {
+        for (let i = 0; i < this.cards.length; i++) {
+          // Ensure position data exists or use defaults
+          const position = this.cardPositions && this.cardPositions[i] ? 
+                          this.cardPositions[i] : { x: 0, y: 0, rotation: 0, scale: 1 };
+          
+          // Ensure card data exists
+          const card = this.cards[i] || { suit: '♠', value: 'A' };
+          const flipped = this.flipped && this.flipped[i] !== undefined ? this.flipped[i] : false;
+          const selected = this.selectedCards && this.selectedCards[i] !== undefined ? this.selectedCards[i] : false;
+          
+          this.renderCard(
+            ctx,
+            startX + i * cardSpacing,
+            centerY,
+            cardWidth,
+            cardHeight,
+            card,
+            flipped,
+            selected,
+            position
+          );
+        }
+      } else {
+        // Draw placeholder message if no cards are available
+        ctx.font = '24px Montserrat';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Loading cards...', centerX, centerY);
       }
       
       // Draw instructions

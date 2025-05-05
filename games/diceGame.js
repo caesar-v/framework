@@ -49,11 +49,17 @@ class DiceGame extends BaseGame {
      * Initialize dice with random values
      */
     initDice() {
+      console.log('DiceGame.initDice - Starting initialization');
+      
+      // Add fallback for numDice
+      const numDice = this.config && this.config.numDice ? this.config.numDice : 3;
+      
+      // Initialize arrays
       this.diceValues = [];
       this.diceRotations = [];
       this.dicePositions = [];
       
-      for (let i = 0; i < this.config.numDice; i++) {
+      for (let i = 0; i < numDice; i++) {
         // Random initial value (1-6)
         this.diceValues.push(Math.floor(Math.random() * 6) + 1);
         
@@ -70,6 +76,12 @@ class DiceGame extends BaseGame {
           y: (Math.random() - 0.5) * 100
         });
       }
+      
+      console.log('DiceGame.initDice - Dice initialized:', {
+        values: this.diceValues,
+        positions: this.dicePositions,
+        config: this.config
+      });
     }
     
     /**
@@ -369,6 +381,11 @@ class DiceGame extends BaseGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
+      // Add debug information
+      console.log('DiceGame.renderGame - config:', this.config);
+      console.log('DiceGame.renderGame - diceValues:', this.diceValues);
+      console.log('DiceGame.renderGame - dicePositions:', this.dicePositions);
+      
       const centerX = width / 2;
       const centerY = height / 2;
       
@@ -388,25 +405,41 @@ class DiceGame extends BaseGame {
       ctx.textBaseline = 'middle';
       ctx.fillText('Lucky Dice', centerX, centerY - 300);
       
-      // Draw dice
-      const spacing = this.config.diceSize * 1.5;
-      const startX = centerX - (spacing * (this.config.numDice - 1)) / 2;
+      // Add fallbacks for dice properties
+      const diceSize = this.config && this.config.diceSize ? this.config.diceSize : 80;
+      const numDice = this.config && this.config.numDice ? this.config.numDice : 3;
+      const diceColors = this.config && this.config.diceColors ? this.config.diceColors : 
+          ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
       
-      for (let i = 0; i < this.config.numDice; i++) {
-        const value = this.diceValues[i];
-        const rotation = this.diceRotations[i];
-        const position = this.dicePositions[i];
-        const color = this.config.diceColors[i % this.config.diceColors.length];
-        
-        this.renderDie(
-          ctx,
-          startX + i * spacing + position.x,
-          centerY + position.y,
-          this.config.diceSize,
-          value,
-          rotation,
-          color
-        );
+      // Draw dice
+      const spacing = diceSize * 1.5;
+      const startX = centerX - (spacing * (numDice - 1)) / 2;
+      
+      // Make sure dice values and positions are initialized
+      if (this.diceValues && this.diceRotations && this.dicePositions) {
+        for (let i = 0; i < numDice; i++) {
+          // Use fallbacks for all values
+          const value = this.diceValues[i] !== undefined ? this.diceValues[i] : Math.floor(Math.random() * 6) + 1;
+          const rotation = this.diceRotations[i] || { x: 0, y: 0, z: 0 };
+          const position = this.dicePositions[i] || { x: 0, y: 0 };
+          const color = diceColors[i % diceColors.length];
+          
+          this.renderDie(
+            ctx,
+            startX + i * spacing + position.x,
+            centerY + position.y,
+            diceSize,
+            value,
+            rotation,
+            color
+          );
+        }
+      } else {
+        // Draw placeholder message if dice data isn't ready
+        ctx.font = '24px Montserrat';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Loading dice...', centerX, centerY);
       }
       
       // Draw instructions
