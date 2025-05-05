@@ -185,8 +185,7 @@ class ChatPanelManager {
     setTimeout(() => {
       if (this.elements.panel) {
         this.elements.panel.classList.add(this.config.activePanelClass);
-        // Force width and opacity for the panel
-        this.elements.panel.style.width = '400px';
+        // Only set opacity, width is controlled by grid
         this.elements.panel.style.opacity = '1';
       }
     }, 50);
@@ -232,7 +231,7 @@ class ChatPanelManager {
       this.elements.panel.classList.remove(this.config.activePanelClass);
       // For logged in users, we keep the panel available but collapsed
       if (window.authManager && window.authManager.isUserLoggedIn()) {
-        this.elements.panel.style.width = '0';
+        // Only set opacity, width is controlled by grid
         this.elements.panel.style.opacity = '0';
       } else {
         // For logged out users, hide it completely
