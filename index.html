@@ -27,6 +27,35 @@
               <span class="balance-value" id="balance-display">1000.00</span>
             </div>
           </div>
+          
+          <!-- Auth Controls - Toggles between login/signup and user info -->
+          <div class="auth-controls" id="auth-controls">
+            <!-- Not logged in state (default) -->
+            <div class="auth-buttons" id="auth-buttons">
+              <button class="auth-button login-button" id="login-button">
+                Log In
+              </button>
+              <button class="auth-button signup-button" id="signup-button">
+                Sign Up
+              </button>
+            </div>
+            
+            <!-- Logged in state (hidden by default) -->
+            <div class="user-info" id="user-info" style="display: none;">
+              <div class="user-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+              </div>
+              <div class="user-details">
+                <span class="username" id="username">Player1</span>
+              </div>
+              <button class="auth-button logout-button" id="logout-button">
+                Log Out
+              </button>
+            </div>
+          </div>
+          
           <div class="header-controls">
             <button class="control-button active" id="sound-button" title="Toggle Sound">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
@@ -361,6 +390,7 @@
   <script src="js/test.js"></script>
   <script src="js/utils/debugManager.js"></script>
   <script src="js/utils/chatPanel.js"></script>
+  <script src="js/utils/authManager.js"></script>
   
   <script>
     // Initialize immediately to ensure gameLoader is available
