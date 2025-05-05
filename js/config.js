@@ -11,7 +11,7 @@ const GameConfig = {
     initialBalance: 1000,
     initialBet: 10,
     maxBet: 500,
-    currency: '¬',
+    currency: 'LC',
     riskLevels: {
       low: 1.5,
       medium: 3,

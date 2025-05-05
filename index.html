@@ -14,11 +14,13 @@
     
     <div id="game-container" class="game-container pc">
       <header class="header">
-        <h1 class="game-title">Game Title</h1>
+        <div class="header-left">
+          <h1 class="portal-title">Lucky Coins</h1>
+        </div>
         <div class="header-right">
           <div class="balance-display">
-            <span class="balance-label">Balance</span>
-            <span class="balance-value" id="balance-display">1000.00 €</span>
+            <span class="balance-label">Wallet</span>
+            <span class="balance-value" id="balance-display">1000.00 <span class="currency-icon">LC</span></span>
           </div>
           <div class="header-controls">
             <button class="control-button active" id="sound-button" title="Toggle Sound">
@@ -88,7 +90,7 @@
             <div class="bet-input-group">
               <button class="btn btn-outline" id="decrease-bet">-</button>
               <input type="text" class="bet-input" id="bet-input" value="10" readonly>
-              <span style="color: var(--color-foreground); align-self: center;">€</span>
+              <span class="currency-icon" style="align-self: center;">LC</span>
               <button class="btn btn-outline" id="increase-bet">+</button>
             </div>
             <div class="quick-bets">
@@ -118,7 +120,7 @@
             <!-- Profit Display -->
             <div class="profit-panel">
               <span class="profit-label">Profit on Win</span>
-              <span class="profit-value" id="potential-win">30.00 €</span>
+              <span class="profit-value" id="potential-win">30.00 <span class="currency-icon">LC</span></span>
             </div>
           </div>
         </div>
@@ -127,7 +129,7 @@
       <footer class="footer">
         <div>Session ID: PB-9876-5432</div>
         <div id="current-time">00:00:00</div>
-        <div>Game Prototype Framework</div>
+        <div id="footer-game-title">Dice Game</div>
       </footer>
     </div>
     
