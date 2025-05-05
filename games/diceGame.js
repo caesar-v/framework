@@ -401,6 +401,151 @@ class DiceGame extends BaseGame {
      * @param {number} height - The canvas height
      * @param {Object} state - The game state
      */
+    renderGameWithPixi(pixiApp, container, width, height, state) {
+      if (!pixiApp || !container) {
+        console.warn('PIXI renderer not available for DiceGame');
+        return;
+      }
+      
+      // Use static flag to prevent excessive logging - log only once
+      if (!this._loggedRenderInfoPixi) {
+        console.log('DiceGame.renderGameWithPixi - Initial PIXI render');
+        console.log('DiceGame.renderGameWithPixi - Initial render - diceValues:', this.diceValues);
+        console.log('DiceGame.renderGameWithPixi - Initial render - dicePositions:', this.dicePositions);
+        this._loggedRenderInfoPixi = true;
+      }
+      
+      try {
+        // Clear existing container
+        container.removeChildren();
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // Create background that fills the entire canvas
+        const background = new PIXI.Graphics();
+        
+        // Create gradient-like effect using multiple rectangles
+        const topColor = 0x0e3c0a;
+        const bottomColor = 0x195c1a;
+        
+        // Fill the entire canvas with gradient background
+        background.beginFill(topColor);
+        background.drawRect(0, 0, width, height);
+        background.endFill();
+        
+        // Add second color to create gradient effect
+        const gradientOverlay = new PIXI.Graphics();
+        gradientOverlay.beginFill(bottomColor, 0.6);
+        gradientOverlay.drawRect(0, height/2, width, height/2);
+        gradientOverlay.endFill();
+        
+        container.addChild(background);
+        container.addChild(gradientOverlay);
+        
+        // Create table that completely fills the canvas
+        const tableWidth = width; // 100% of width
+        const tableHeight = height; // 100% of height
+        
+        const table = new PIXI.Graphics();
+        table.beginFill(0x1a5d1a);
+        table.drawRect(
+          centerX - tableWidth/2, 
+          centerY - tableHeight/2, 
+          tableWidth, 
+          tableHeight
+        );
+        table.endFill();
+        
+        // Add felt texture/pattern with border that scales with table size
+        const borderWidth = Math.max(5, Math.floor(tableWidth * 0.015));
+        table.lineStyle(borderWidth, 0x0e4c0e); // Darker green border
+        table.drawRect(
+          centerX - tableWidth/2, 
+          centerY - tableHeight/2, 
+          tableWidth, 
+          tableHeight
+        );
+        
+        container.addChild(table);
+        
+        // Draw title with PIXI - font size scales with canvas
+        const titleFontSize = Math.max(24, Math.min(48, width * 0.05));
+        const titleStyle = new PIXI.TextStyle({
+          fontFamily: 'Poppins, Arial',
+          fontSize: titleFontSize,
+          fontWeight: 'bold',
+          fill: '#FFD700',
+          align: 'center'
+        });
+        
+        const titleText = new PIXI.Text(this.config.gameTitle, titleStyle);
+        titleText.anchor.set(0.5);
+        titleText.x = centerX;
+        titleText.y = centerY - tableHeight * 0.4;
+        
+        container.addChild(titleText);
+        
+        // Draw dice on the table - code for this will be added later
+        
+        // Draw simple instructions if dice aren't rolled yet
+        if (!this.diceValues || this.diceValues.length === 0) {
+          const instructionsFontSize = Math.max(16, Math.min(24, width * 0.025));
+          const instructionsStyle = new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: instructionsFontSize,
+            fill: '#FFFFFF',
+            align: 'center'
+          });
+          
+          const instructionsText = new PIXI.Text('Click SPIN to roll dice!', instructionsStyle);
+          instructionsText.anchor.set(0.5);
+          instructionsText.x = centerX;
+          instructionsText.y = centerY;
+          
+          container.addChild(instructionsText);
+        }
+        
+        // Add winning combinations - text size scales with canvas
+        const winTextSize = Math.max(12, Math.min(18, width * 0.018));
+        const winTextStyle = new PIXI.TextStyle({
+          fontFamily: 'Montserrat, Arial',
+          fontSize: winTextSize,
+          fill: '#FFFFFF',
+          align: 'left'
+        });
+        
+        // Position relative to table size
+        const winX = centerX - tableWidth * 0.45;
+        let winY = centerY - tableHeight * 0.3;
+        
+        const winTitleText = new PIXI.Text('Winning Combinations:', winTextStyle);
+        winTitleText.x = winX;
+        winTitleText.y = winY;
+        container.addChild(winTitleText);
+        
+        winY += winTextSize * 1.5;
+        const win1Text = new PIXI.Text('• All Same: 5x', winTextStyle);
+        win1Text.x = winX;
+        win1Text.y = winY;
+        container.addChild(win1Text);
+        
+        winY += winTextSize * 1.3;
+        const win2Text = new PIXI.Text('• Straight: 3x', winTextStyle);
+        win2Text.x = winX;
+        win2Text.y = winY;
+        container.addChild(win2Text);
+        
+        winY += winTextSize * 1.3;
+        const win3Text = new PIXI.Text('• One Pair: 1.5x', winTextStyle);
+        win3Text.x = winX;
+        win3Text.y = winY;
+        container.addChild(win3Text);
+      } catch (error) {
+        console.error('Error in PIXI dice game rendering:', error);
+      }
+    }
+    
     renderGame(ctx, width, height, state) {
       // Use static flag to prevent excessive logging - log only once
       if (!this._loggedRenderInfo) {
@@ -413,21 +558,52 @@ class DiceGame extends BaseGame {
       const centerX = width / 2;
       const centerY = height / 2;
       
+      // Clear the entire canvas first
+      ctx.clearRect(0, 0, width, height);
+      
+      // Create gradient background that fills the entire canvas
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#0e3c0a'); // Dark green at top
+      gradient.addColorStop(1, '#195c1a'); // Slightly lighter green at bottom
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw gambling table with felt that completely fills the canvas
+      // Table size exactly matches the canvas dimensions
+      const tableWidth = width; // 100% of width
+      const tableHeight = height; // 100% of height
+      
       // Draw table background
       ctx.fillStyle = '#1a5d1a';
-      ctx.fillRect(centerX - 400, centerY - 250, 800, 500);
+      ctx.fillRect(
+        centerX - tableWidth/2, 
+        centerY - tableHeight/2, 
+        tableWidth, 
+        tableHeight
+      );
       
-      // Draw table border
+      // Draw table border with width proportional to table size
+      const borderWidth = Math.max(5, Math.floor(tableWidth * 0.015));
       ctx.strokeStyle = '#0d3d0d';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(centerX - 400, centerY - 250, 800, 500);
+      ctx.lineWidth = borderWidth;
+      ctx.strokeRect(
+        centerX - tableWidth/2, 
+        centerY - tableHeight/2, 
+        tableWidth, 
+        tableHeight
+      );
       
-      // Draw title
-      ctx.font = 'bold 48px Poppins';
+      // Draw title with font size proportional to canvas width
+      const titleFontSize = Math.max(24, Math.min(48, width * 0.05));
+      ctx.font = `bold ${titleFontSize}px Poppins, Arial`;
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Lucky Dice', centerX, centerY - 300);
+      ctx.fillText(
+        this.config.gameTitle || 'Lucky Dice',
+        centerX,
+        centerY - tableHeight * 0.4
+      );
       
       // Add fallbacks for dice properties
       const diceSize = this.config && this.config.diceSize ? this.config.diceSize : 80;
@@ -435,8 +611,11 @@ class DiceGame extends BaseGame {
       const diceColors = this.config && this.config.diceColors ? this.config.diceColors : 
           ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
       
+      // Adjust dice size based on canvas size
+      const scaledDiceSize = Math.max(40, Math.min(diceSize, width * 0.08, height * 0.12));
+      
       // Draw dice
-      const spacing = diceSize * 1.5;
+      const spacing = scaledDiceSize * 1.5;
       const startX = centerX - (spacing * (numDice - 1)) / 2;
       
       // Make sure dice values and positions are initialized
@@ -452,7 +631,7 @@ class DiceGame extends BaseGame {
             ctx,
             startX + i * spacing + position.x,
             centerY + position.y,
-            diceSize,
+            scaledDiceSize,
             value,
             rotation,
             color
@@ -460,33 +639,43 @@ class DiceGame extends BaseGame {
         }
       } else {
         // Draw placeholder message if dice data isn't ready
-        ctx.font = '24px Montserrat';
+        const msgFontSize = Math.max(16, Math.min(24, width * 0.025));
+        ctx.font = `${msgFontSize}px Montserrat, Arial`;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.textAlign = 'center';
         ctx.fillText('Loading dice...', centerX, centerY);
       }
       
-      // Draw instructions
-      ctx.font = '24px Montserrat';
+      // Draw instructions - font size scales with canvas width
+      const instructionsFontSize = Math.max(16, Math.min(24, width * 0.025));
+      ctx.font = `${instructionsFontSize}px Montserrat, Arial`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.textAlign = 'center';
-      ctx.fillText('Roll the dice and match winning combinations!', centerX, centerY + 200);
+      ctx.fillText(
+        'Roll the dice and match winning combinations!', 
+        centerX, 
+        centerY + tableHeight * 0.3
+      );
       
-      // Draw winning combinations table
-      ctx.font = '18px Montserrat';
+      // Draw winning combinations table - font size scales with canvas width
+      const winTextSize = Math.max(12, Math.min(18, width * 0.018));
+      ctx.font = `${winTextSize}px Montserrat, Arial`;
       ctx.textAlign = 'left';
-      let y = centerY - 200;
       
-      ctx.fillText('Winning Combinations:', centerX - 350, y);
-      y += 30;
+      // Position relative to table size
+      const winX = centerX - tableWidth * 0.45;
+      let winY = centerY - tableHeight * 0.3;
       
-      ctx.fillText('• All Same: 5x', centerX - 350, y);
-      y += 25;
+      ctx.fillText('Winning Combinations:', winX, winY);
+      winY += winTextSize * 1.5;
       
-      ctx.fillText('• Straight: 3x', centerX - 350, y);
-      y += 25;
+      ctx.fillText('• All Same: 5x', winX, winY);
+      winY += winTextSize * 1.3;
       
-      ctx.fillText('• One Pair: 1.5x', centerX - 350, y);
+      ctx.fillText('• Straight: 3x', winX, winY);
+      winY += winTextSize * 1.3;
+      
+      ctx.fillText('• One Pair: 1.5x', winX, winY);
     }
     
     /**
@@ -500,12 +689,16 @@ class DiceGame extends BaseGame {
     handleWin(ctx, width, height, winAmount, result) {
       const centerX = width / 2;
       
-      // Draw win message
-      ctx.font = 'bold 64px Poppins';
+      // Scale font sizes based on canvas dimensions
+      const winFontSize = Math.max(32, Math.min(64, width * 0.065));
+      const winTypeFontSize = Math.max(24, Math.min(36, width * 0.035));
+      
+      // Draw win message - position relative to canvas height
+      ctx.font = `bold ${winFontSize}px Poppins, Arial`;
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`WIN! +${winAmount.toFixed(2)} €`, centerX, 150);
+      ctx.fillText(`WIN! +${winAmount.toFixed(2)} €`, centerX, height * 0.15);
       
       // Draw the win type
       let winTypeText = '';
@@ -521,8 +714,8 @@ class DiceGame extends BaseGame {
           break;
       }
       
-      ctx.font = 'bold 36px Poppins';
-      ctx.fillText(winTypeText, centerX, 220);
+      ctx.font = `bold ${winTypeFontSize}px Poppins, Arial`;
+      ctx.fillText(winTypeText, centerX, height * 0.22);
     }
     
     /**
@@ -535,12 +728,15 @@ class DiceGame extends BaseGame {
     handleLoss(ctx, width, height, result) {
       const centerX = width / 2;
       
-      // Draw try again message
-      ctx.font = 'bold 36px Poppins';
+      // Scale font size based on canvas dimensions
+      const lossFontSize = Math.max(24, Math.min(36, width * 0.035));
+      
+      // Draw try again message - position relative to canvas height
+      ctx.font = `bold ${lossFontSize}px Poppins, Arial`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('No winning combination. Try again!', centerX, height - 100);
+      ctx.fillText('No winning combination. Try again!', centerX, height * 0.9);
     }
   }
   

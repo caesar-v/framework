@@ -494,10 +494,10 @@ class CardGame extends BaseGame {
         background.endFill();
         container.addChild(background);
         
-        // Create table with felt that fills most of the canvas
-        // Table size is proportional to canvas dimensions
-        const tableWidth = Math.min(width * 0.9, height * 1.5);
-        const tableHeight = Math.min(height * 0.8, tableWidth * 0.6);
+        // Create table with felt that completely fills the canvas
+        // Table size exactly matches the canvas dimensions
+        const tableWidth = width; // 100% of width
+        const tableHeight = height; // 100% of height
         
         // Draw felt
         const table = new PIXI.Graphics();
@@ -613,10 +613,10 @@ class CardGame extends BaseGame {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
       
-      // Draw poker table with felt that fills most of the canvas
-      // Table size is proportional to canvas dimensions
-      const tableWidth = Math.min(width * 0.9, height * 1.5);
-      const tableHeight = Math.min(height * 0.8, tableWidth * 0.6);
+      // Draw poker table with felt that completely fills the canvas
+      // Table size exactly matches the canvas dimensions
+      const tableWidth = width; // 100% of width
+      const tableHeight = height; // 100% of height
       
       // Draw felt
       ctx.fillStyle = '#27ae60'; // Felt green

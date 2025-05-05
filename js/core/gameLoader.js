@@ -58,6 +58,12 @@ class GameLoader {
         
         // Use standard game creation for all games
         this.forceCreateNewGame(selectedGameType);
+        
+        // Close settings panel after game change
+        const settingsPanel = document.getElementById('settings-panel');
+        if (settingsPanel && settingsPanel.classList.contains('active')) {
+          settingsPanel.classList.remove('active');
+        }
       });
       
       // Load the default game
@@ -153,6 +159,11 @@ class GameLoader {
         setTimeout(() => {
           try {
             this.activeGame.game.drawCanvas();
+            
+            // Update game canvas info in settings panel
+            if (typeof this.activeGame.game.updateGameCanvasInfo === 'function') {
+              this.activeGame.game.updateGameCanvasInfo();
+            }
           } catch (drawError) {
             console.error('Error during initial canvas draw:', drawError);
           }
@@ -444,6 +455,11 @@ class GameLoader {
       // Redraw the game canvas
       if (this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
         this.activeGame.game.drawCanvas();
+        
+        // Update game canvas info in settings panel
+        if (typeof this.activeGame.game.updateGameCanvasInfo === 'function') {
+          this.activeGame.game.updateGameCanvasInfo();
+        }
       }
       
       console.log(`Successfully activated ${gameType}`);

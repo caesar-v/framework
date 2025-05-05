@@ -149,7 +149,8 @@ class GameFramework {
         // Screen resolution displays in settings panel
         screenResolution: document.getElementById('settings-screen-resolution'),
         windowSize: document.getElementById('settings-window-size'),
-        canvasSize: document.getElementById('settings-canvas-size')
+        canvasSize: document.getElementById('settings-canvas-size'),
+        gameCanvas: document.getElementById('settings-game-canvas')
       };
   
       // Set game title
@@ -667,6 +668,48 @@ class GameFramework {
         
         this.elements.canvasSize.textContent = `Canvas: ${this.canvas.width}×${this.canvas.height}${playgroundInfo}`;
       }
+      
+      // Update game-specific canvas dimensions in settings panel
+      this.updateGameCanvasInfo();
+    }
+    
+    /**
+     * Update game-specific canvas dimensions in the settings panel
+     * This shows the dimensions of each game's gameplay area
+     */
+    updateGameCanvasInfo() {
+      if (this.elements.gameCanvas) {
+        // Get the current game name
+        const gameName = this.config.gameTitle || 'Game';
+        
+        // Get the active game's dimensions
+        let gameWidth = this.canvas.width;
+        let gameHeight = this.canvas.height;
+        
+        // For BaseGame, CardGame, and DiceGame, add specific dimensions
+        // These would typically be the table area or playfield
+        if (this.config.gameLogic && this.canvas) {
+          if (gameName.includes('Card')) {
+            // Card Game table now matches canvas exactly
+            this.elements.gameCanvas.textContent = `${gameName} Table: ${gameWidth}×${gameHeight}`;
+          } 
+          else if (gameName.includes('Dice')) {
+            // Dice Game table now matches canvas exactly
+            this.elements.gameCanvas.textContent = `${gameName} Table: ${gameWidth}×${gameHeight}`;
+          }
+          else if (gameName.includes('Base')) {
+            // For Base Game, simply show the canvas size with a note
+            this.elements.gameCanvas.textContent = `${gameName} Area: ${gameWidth}×${gameHeight} (Full Canvas)`;
+          }
+          else {
+            // Generic case for other games
+            this.elements.gameCanvas.textContent = `${gameName} Canvas: ${gameWidth}×${gameHeight}`;
+          }
+        } else {
+          // Generic fallback
+          this.elements.gameCanvas.textContent = `Game Playground: ${gameWidth}×${gameHeight}`;
+        }
+      }
     }
     
     /**
@@ -1103,6 +1146,9 @@ class GameFramework {
         // Default to Canvas2D if PIXI is not available or disabled
         this.drawWithCanvas2D();
       }
+      
+      // Update the game canvas information in the settings panel
+      this.updateGameCanvasInfo();
     }
     
     /**
