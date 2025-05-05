@@ -101,18 +101,18 @@ class AuthManager {
   }
   
   /**
-   * Show signup dialog
+   * Show registration dialog
    */
   showSignupDialog() {
-    console.log('Signup button clicked');
-    // Simple prompt-based signup for demo
+    console.log('Register button clicked');
+    // Simple prompt-based registration for demo
     const username = prompt('Choose a username:');
     if (username) {
       const password = prompt('Choose a password:');
       if (password) {
         const confirmPassword = prompt('Confirm your password:');
         if (password === confirmPassword) {
-          // Demo signup: any matching passwords will work
+          // Demo registration: any matching passwords will work
           this.loginSuccess({
             username: username,
             id: Date.now().toString()
