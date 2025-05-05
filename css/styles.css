@@ -1565,8 +1565,8 @@
   
   /* Chat panel */
   .chat-panel {
-    flex: 0 0 0; /* Initial width is 0 */
-    max-width: 0; /* Start collapsed */
+    grid-area: chat; /* Always place in chat area of grid */
+    width: 0; /* Start with zero width */
     height: 100%; /* Full height */
     background-color: var(--color-background); /* Match framework background */
     border-left: 1px solid var(--color-border); /* Match framework border */
@@ -1576,19 +1576,18 @@
     transition: all 0.3s ease-in-out;
     overflow: hidden; /* Hide content when collapsed */
     opacity: 0;
-    order: 3; /* Always position it on the right in flex layout */
+    margin: 0; /* No margin */
   }
   
   .chat-panel.active {
-    flex: 0 0 400px; /* Fixed width when active - increased to 400px */
-    max-width: 400px;
+    width: 400px; /* Fixed width when active */
     opacity: 1;
     height: 100%; /* Full height of parent */
   }
   
   /* Apply specific styles when in grid layout */
   .pc .game-content.chat-open .chat-panel.active {
-    flex: 1; /* Allow it to fill the grid area */
+    width: 100%; /* Take full width of the grid cell */
     max-width: none; /* Remove max-width so it fills the grid area */
   }
   
@@ -1636,22 +1635,22 @@
     flex: 1; /* Take all available space */
     overflow: hidden;
     position: relative;
-    display: block; /* Changed to block for absolute positioning of iframe */
+    display: block; /* Block display for iframe */
     height: calc(100% - 50px); /* Full height minus header height */
-    min-height: 400px; /* Minimum height to ensure sufficient space */
+    padding: 0; /* No padding */
+    margin: 0; /* No margin */
+    width: 100%; /* Full width */
   }
   
   #watchers-chat {
-    width: 100%;
-    height: 100%;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
     border: none;
     background-color: var(--color-panel); /* Match framework panel color */
-    flex: 1; /* Make iframe fill available space */
-    position: absolute; /* Position absolutely to fill entire container */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    display: block; /* Use block display */
+    object-fit: fill; /* Fill the entire container */
+    min-width: 100%; /* Ensure iframe takes full width */
+    min-height: 100%; /* Ensure iframe takes full height */
   }
   
   /* Configure game content as a three-column layout when chat is open */
@@ -1660,41 +1659,53 @@
   .pc .game-content {
     transition: all 0.3s ease-in-out;
     position: relative; /* For proper positioning of chat panel */
-    display: flex; /* Always use flex to maintain structure */
-    height: 100%; /* Ensure full height */
-  }
-  
-  /* Apply grid layout when chat is open */
-  .pc .game-content.chat-open {
-    display: grid;
-    grid-template-columns: 300px minmax(0, 1fr) 400px; /* Fixed 400px for chat column */
+    display: grid; /* Always use grid to prevent jumping */
+    grid-template-columns: 300px minmax(0, 1fr) 0; /* Third column starts at 0 width */
     grid-template-areas: "betting playground chat";
     gap: var(--spacing-md);
     height: 100%; /* Ensure full height */
   }
   
-  .pc .game-content.chat-open .betting-zone {
+  /* Apply grid layout when chat is open */
+  .pc .game-content.chat-open {
+    grid-template-columns: 300px minmax(0, 1fr) 400px; /* Fixed 400px for chat column */
+    grid-template-areas: "betting playground chat";
+  }
+  
+  .pc .betting-zone {
     grid-area: betting;
-    margin: 0;
+    margin: var(--spacing-md);
+    margin-right: 0;
     width: auto;
   }
   
-  .pc .game-content.chat-open .playground-zone {
+  .pc .playground-zone {
     grid-area: playground;
-    margin: 0;
-    flex: 1; /* Allow it to fill its grid area */
+    margin: var(--spacing-md);
+    margin-left: 0;
+    margin-right: 0;
     width: 100%;
     height: 100%;
   }
   
-  .pc .game-content.chat-open .chat-panel {
+  /* Reset margins in chat open mode to prevent double margins */
+  .pc .game-content.chat-open .betting-zone,
+  .pc .game-content.chat-open .playground-zone {
+    margin: 0;
+  }
+  
+  .pc .chat-panel {
     grid-area: chat;
     margin: 0;
-    max-width: 100%; /* Allow it to fill its grid area */
+    width: 0;
+    height: 100%;
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  }
+  
+  .pc .game-content.chat-open .chat-panel.active {
     width: 100%;
-    flex: 1 1 auto; /* Allow it to grow and shrink */
-    min-width: 350px; /* Ensure minimum width in grid layout */
-    height: 100%; /* Full height */
+    margin: 0;
+    height: 100%;
   }
   
   /* Adjust playground position instead of width */

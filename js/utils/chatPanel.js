@@ -185,10 +185,9 @@ class ChatPanelManager {
     setTimeout(() => {
       if (this.elements.panel) {
         this.elements.panel.classList.add(this.config.activePanelClass);
-        // Force display and opacity for the panel
-        this.elements.panel.style.display = '';
+        // Force width and opacity for the panel
+        this.elements.panel.style.width = '400px';
         this.elements.panel.style.opacity = '1';
-        this.elements.panel.style.maxWidth = '400px';
       }
     }, 50);
     
@@ -233,9 +232,8 @@ class ChatPanelManager {
       this.elements.panel.classList.remove(this.config.activePanelClass);
       // For logged in users, we keep the panel available but collapsed
       if (window.authManager && window.authManager.isUserLoggedIn()) {
-        this.elements.panel.style.display = '';
+        this.elements.panel.style.width = '0';
         this.elements.panel.style.opacity = '0';
-        this.elements.panel.style.maxWidth = '0';
       } else {
         // For logged out users, hide it completely
         this.elements.panel.style.display = 'none';
