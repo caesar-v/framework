@@ -179,14 +179,15 @@ class ChatPanelManager {
     // First add chat-open class to game-content to ensure proper layout
     if (this.elements.gameContent) {
       this.elements.gameContent.classList.add(this.config.chatOpenClass);
+      // CSS will handle the grid template columns
     }
     
     // Small delay to allow the grid to set up before animating the panel
     setTimeout(() => {
       if (this.elements.panel) {
         this.elements.panel.classList.add(this.config.activePanelClass);
-        // Only set opacity, width is controlled by grid
-        this.elements.panel.style.opacity = '1';
+        // CSS controls width and opacity via the active class
+        this.elements.panel.style.removeProperty('opacity');
       }
     }, 50);
     
@@ -229,14 +230,7 @@ class ChatPanelManager {
     // First collapse the panel without changing layout
     if (this.elements.panel) {
       this.elements.panel.classList.remove(this.config.activePanelClass);
-      // For logged in users, we keep the panel available but collapsed
-      if (window.authManager && window.authManager.isUserLoggedIn()) {
-        // Only set opacity, width is controlled by grid
-        this.elements.panel.style.opacity = '0';
-      } else {
-        // For logged out users, hide it completely
-        this.elements.panel.style.display = 'none';
-      }
+      // CSS will handle panel appearance via classes
     }
     
     // Update button states
@@ -255,6 +249,7 @@ class ChatPanelManager {
       // Remove the chat-open class from the game-content
       if (this.elements.gameContent) {
         this.elements.gameContent.classList.remove(this.config.chatOpenClass);
+        // CSS will handle the grid template change
       }
       
       // Trigger window resize to update canvas sizing

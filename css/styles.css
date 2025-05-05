@@ -361,14 +361,13 @@
   
   /* User-only elements - Initially hidden until user is logged in */
   .user-only-element {
-    display: none !important;
+    display: none; /* JS will override this when user is logged in */
   }
   
-  /* This !important will be removed by the JS when user logs in */
   /* Special case for chat panel to ensure it works with grid layout */
   .chat-panel.user-only-element.active {
-    opacity: 1 !important;
-    max-width: 350px !important;
+    opacity: 1;
+    max-width: 400px;
   }
   
   .header-right {
@@ -556,9 +555,11 @@
   /* Main game content area - where canvas and controls display */
   .game-content {
     flex: 1;
-    display: flex;
+    display: grid;
     position: relative;
     overflow: hidden;
+    gap: var(--spacing-md);
+    height: 100%;
   }
   
   /* Playground zone - contains the game canvas */
@@ -1570,6 +1571,7 @@
     height: 100%; /* Full height */
     background-color: var(--color-background); /* Match framework background */
     border-left: 1px solid var(--color-border); /* Match framework border */
+    border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
@@ -1580,9 +1582,20 @@
   }
   
   .chat-panel.active {
-    width: 400px; /* Fixed width when active */
+    width: 100%; /* Take full width of grid cell */
+    max-width: 400px; /* Limit maximum width */
     opacity: 1;
     height: 100%; /* Full height of parent */
+  }
+  
+  /* When game content has chat-open class, adjust grid template */
+  .game-content.chat-open {
+    grid-template-columns: 300px 1fr 400px !important;
+  }
+  
+  /* When game content doesn't have chat-open class */
+  .game-content:not(.chat-open) {
+    grid-template-columns: 300px 1fr 0fr !important;
   }
   
   /* Apply specific styles when in grid layout */
@@ -1661,19 +1674,18 @@
   
   /* PC layout with three columns */
   .pc .game-content {
-    position: relative; /* For proper positioning of chat panel */
-    display: grid; /* Always use grid to prevent jumping */
-    grid-template-columns: 300px 1fr 0fr; /* Fixed first column, fluid middle, zero-width third */
+    position: relative;
+    display: grid;
+    grid-template-columns: 300px 1fr 0fr;
     grid-template-areas: "betting playground chat";
     gap: var(--spacing-md);
-    height: 100%; /* Ensure full height */
+    height: 100%;
   }
   
-  /* Apply grid layout when chat is open */
   .pc .game-content.chat-open {
-    grid-template-columns: 300px 1fr 400px; /* Fixed columns for betting and chat, fluid middle */
+    grid-template-columns: 300px 1fr 400px;
     grid-template-areas: "betting playground chat";
-    padding-right: 0; /* No padding on right side */
+    padding-right: 0;
   }
   
   .pc .betting-zone {

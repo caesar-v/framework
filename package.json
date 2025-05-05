@@ -1,0 +1,12 @@
+{
+  "name": "framework",
+  "version": "1.0.0",
+  "description": "A lightweight framework for quickly prototyping casino-style games with a consistent UI and customizable game logic.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

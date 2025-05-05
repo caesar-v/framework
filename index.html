@@ -99,32 +99,20 @@
         </div>
       </header>
       
-      <div class="game-content">
+      <div class="game-content" 
+           style="grid-template-areas: 'betting playground chat'; grid-template-columns: 300px 1fr 400px;"
+           data-md-style="grid-template-areas: 'betting playground' 'betting chat'; grid-template-columns: 300px 1fr;"
+           data-base-style="grid-template-areas: 'playground' 'betting' 'chat'; grid-template-columns: 1fr;">
         <!-- Three main zones: playground (game canvas), betting zone, and chat panel -->
-        
-        <!-- Playground Zone - Contains the game canvas -->
-        <div class="playground-zone">
-          <canvas id="game-canvas"></canvas>
-        </div>
-        
-        <!-- Chat Panel - Sliding panel for watchers.io chat - Only visible for logged in users -->
-        <div id="chat-panel" class="chat-panel user-only-element">
-          <div class="chat-header">
-            <h3>Live Chat</h3>
-            <button id="close-chat" class="close-chat">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div class="chat-content">
-            <!-- Watchers.io iframe will be inserted here -->
-            <iframe id="watchers-chat" src="about:blank" frameborder="0"></iframe>
-          </div>
-        </div>
+        <!-- 
+          Responsive layouts applied with JavaScript:
+          - Small screens (max-width: 768px): Single column layout (playground, betting, chat)
+          - Medium screens (max-width: 1024px): Two column layout (betting on left, playground and chat stacked on right)
+          - Large screens: Three column layout (betting, playground, chat)
+        -->
         
         <!-- Betting Zone - Contains all betting controls and game actions -->
-        <div class="betting-zone">
+        <div class="betting-zone" style="grid-area: betting;">
           <!-- Play Mode Toggle (Manual/Auto) -->
           <div class="play-mode-section">
             <div class="play-mode-tabs">
@@ -134,22 +122,22 @@
           </div>
           
           <!-- Bet Amount Panel -->
-          <div class="control-panel bet-panel">
+          <div class="control-panel">
             <div class="control-panel-header">
               <span class="control-panel-title">Bet Amount</span>
             </div>
             <div class="bet-input-group">
               <button class="btn btn-outline" id="decrease-bet">-</button>
               <input type="text" class="bet-input" id="bet-input" value="10" readonly>
-              <div class="gold-coin-icon small" style="align-self: center;">
+              <div class="gold-coin-icon small">
                 <img src="assets/images/StatusBarIcon_Gold.png" alt="Gold">
               </div>
               <button class="btn btn-outline" id="increase-bet">+</button>
             </div>
             <div class="quick-bets">
-              <button class="quick-bet" id="half-bet">1/2 Bet</button>
-              <button class="quick-bet" id="double-bet">×2 Bet</button>
-              <button class="quick-bet" id="max-bet">Max Bet</button>
+              <button class="quick-bet" id="half-bet">1/2</button>
+              <button class="quick-bet" id="double-bet">×2</button>
+              <button class="quick-bet" id="max-bet">Max</button>
             </div>
           </div>
           
@@ -182,6 +170,27 @@
             </div>
           </div>
         </div>
+        
+        <!-- Playground Zone - Contains the game canvas -->
+        <div class="playground-zone" style="grid-area: playground;">
+          <canvas id="game-canvas"></canvas>
+        </div>
+        
+        <!-- Chat Panel - Sliding panel for watchers.io chat - Only visible for logged in users -->
+        <div id="chat-panel" class="chat-panel user-only-element" style="grid-area: chat;">
+          <div class="chat-header">
+            <h3>Live Chat</h3>
+            <button id="close-chat" class="close-chat">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="chat-content">
+            <!-- Watchers.io iframe will be inserted here -->
+            <iframe id="watchers-chat" src="about:blank" frameborder="0"></iframe>
+          </div>
+        </div>
       </div>
       
       <footer class="footer">
@@ -195,55 +204,71 @@
     <div class="settings-panel" id="settings-panel">
       <div class="settings-header">
         <h2 class="settings-title">Game Settings</h2>
-        <button class="settings-close" id="close-settings">×</button>
+        <button class="settings-close" id="close-settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       <div class="settings-content">
+        <!-- Game Section -->
         <div class="settings-section">
           <h3 class="settings-section-title">Game</h3>
           <div class="game-selector-controls">
             <label class="control-label" for="game-select">Select Game:</label>
-            <select id="game-select" class="control-select">
-              <option value="dice">Dice Game</option>
-              <option value="card">Card Game</option>
-            </select>
+            <div class="select-wrapper">
+              <select id="game-select" class="control-select">
+                <option value="dice">Dice Game</option>
+                <option value="card">Card Game</option>
+              </select>
+            </div>
           </div>
         </div>
 
+        <!-- Display Section -->
         <div class="settings-section">
           <h3 class="settings-section-title">Display</h3>
           
+          <!-- Screen Info -->
           <div class="screen-info">
-            <span class="control-label">Screen Resolution:</span>
+            <div class="control-label">Screen Resolution:</div>
             <div class="info-display" id="settings-screen-resolution">1920×1080</div>
             <div class="info-display" id="settings-window-size">Window: 1920×1080</div>
             <div class="info-display" id="settings-canvas-size">Canvas: 1920×1080</div>
             <div class="info-display" id="settings-game-canvas">Game Playground: 0×0</div>
           </div>
           
+          <!-- Layout Toggle -->
           <div class="layout-controls">
-            <span class="control-label">Layout:</span>
+            <div class="control-label">Layout:</div>
             <div class="layout-toggle">
               <input type="radio" name="layout" id="desktop" checked>
               <label for="desktop">PC (16:9)</label>
               <input type="radio" name="layout" id="mobile">
               <label for="mobile">Mobile (9:16)</label>
-              <span class="toggle-indicator"></span>
+              <div class="toggle-indicator"></div>
             </div>
           </div>
           
+          <!-- Theme Selector -->
           <div class="theme-controls">
             <label class="control-label" for="theme-select">Theme:</label>
-            <select id="theme-select" class="control-select">
-              <option value="default">Dark Theme</option>
-              <option value="pirate">Pirate Theme</option>
-              <option value="neon">Neon Theme</option>
-              <option value="classic">Classic Casino</option>
-            </select>
+            <div class="select-wrapper">
+              <select id="theme-select" class="control-select">
+                <option value="default">Dark Theme</option>
+                <option value="pirate">Pirate Theme</option>
+                <option value="neon">Neon Theme</option>
+                <option value="classic">Classic Casino</option>
+              </select>
+            </div>
           </div>
         </div>
         
+        <!-- Development Section -->
         <div class="settings-section">
           <h3 class="settings-section-title">Development</h3>
+          
+          <!-- Debug Controls -->
           <div class="debug-controls">
             <span class="control-label">Debug Mode:</span>
             <div class="toggle-switch-wrapper">
@@ -252,11 +277,12 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            <button id="debug-button" class="btn btn-outline">🐛 Analyze</button>
+            <button id="debug-button">🐛 Analyze</button>
           </div>
           
+          <!-- Test Controls -->
           <div class="test-controls">
-            <button id="autotest-button" class="btn btn-outline">Run Tests</button>
+            <button id="autotest-button">Run Tests</button>
           </div>
         </div>
       </div>
@@ -409,6 +435,7 @@
   <script src="js/utils/chatPanel.js"></script>
   <script src="js/utils/authManager.js"></script>
   <script src="js/utils/searchManager.js"></script>
+  <script src="js/utils/responsiveLayout.js"></script>
   
   <script>
     // Initialize immediately to ensure gameLoader is available
@@ -459,6 +486,57 @@
         if (window.chatPanel && typeof window.chatPanel.updateChatTheme === 'function') {
           window.chatPanel.updateChatTheme(this.value);
         }
+      });
+      
+      // Apply responsive layouts
+      function applyResponsiveLayout() {
+        const gameContent = document.querySelector('.game-content');
+        const windowWidth = window.innerWidth;
+        
+        if (gameContent) {
+          // Apply layout based on screen size
+          if (windowWidth <= 768) {
+            // Small screens - single column
+            const smLayout = gameContent.getAttribute('data-sm-layout');
+            if (smLayout) {
+              const properties = smLayout.split(';').map(prop => prop.trim());
+              properties.forEach(prop => {
+                if (prop) {
+                  const [property, value] = prop.split(':').map(p => p.trim());
+                  gameContent.style[property] = value;
+                }
+              });
+            }
+            console.log("Applied small screen layout");
+          } else if (windowWidth <= 1024) {
+            // Medium screens - two columns
+            const mdLayout = gameContent.getAttribute('data-md-layout');
+            if (mdLayout) {
+              const properties = mdLayout.split(';').map(prop => prop.trim());
+              properties.forEach(prop => {
+                if (prop) {
+                  const [property, value] = prop.split(':').map(p => p.trim());
+                  gameContent.style[property] = value;
+                }
+              });
+            }
+            console.log("Applied medium screen layout");
+          } else {
+            // Large screens - three columns (default)
+            const style = gameContent.getAttribute('style');
+            const baseStyle = style.split('data-')[0];
+            gameContent.setAttribute('style', baseStyle);
+            console.log("Applied large screen layout");
+          }
+        }
+      }
+      
+      // Apply layout on load
+      applyResponsiveLayout();
+      
+      // Apply layout on resize
+      window.addEventListener('resize', function() {
+        applyResponsiveLayout();
       });
     });
   </script>

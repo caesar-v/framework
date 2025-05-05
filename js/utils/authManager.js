@@ -211,9 +211,16 @@ class AuthManager {
         display: flex !important;
       }
       .user-only-element.chat-panel {
-        display: block !important; 
+        display: flex !important; 
+        flex-direction: column !important;
+        width: 0 !important; /* Start with zero width but visible */
+        opacity: 0 !important; /* Start hidden but in the flow */
       }
-      /* Do not set opacity directly, let the chat manager handle it */
+      .user-only-element.chat-panel.active {
+        width: 100% !important; /* Full width when active */
+        max-width: 400px !important; /* Limit max width */
+        opacity: 1 !important; /* Fully visible when active */
+      }
     `;
     document.head.appendChild(styleElement);
     
