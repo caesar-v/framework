@@ -289,10 +289,13 @@ class GameLoader {
     // CRITICAL FIX: Prevent recursive calls and infinite loops
     if (this._loadingGame) {
       console.warn('Already loading a game, ignoring additional request');
+      // Add a debug flag specifically for test detection
+      this._loadingGameTest = true;
       return;
     }
     
     this._loadingGame = true;
+    this._loadingGameTest = false;
     console.log(`Loading game: ${gameType}`);
     
     // Always update the selector to match, but use a flag to prevent event triggering

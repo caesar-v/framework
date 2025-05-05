@@ -6,11 +6,14 @@
 (function() {
   // Create global debug namespace with utilities
   window.debug = {
+    // Debug state
+    isDebugEnabled: false,
+    
     // Enhanced logging with different levels
     error: (message, ...data) => console.error(`[ERROR] ${message}`, ...data),
-    warn: (message, ...data) => console.warn(`[WARN] ${message}`, ...data),
-    info: (message, ...data) => console.info(`[INFO] ${message}`, ...data),
-    log: (message, ...data) => console.log(`[DEBUG] ${message}`, ...data),
+    warn: (message, ...data) => this.isDebugEnabled ? console.warn(`[WARN] ${message}`, ...data) : null,
+    info: (message, ...data) => this.isDebugEnabled ? console.info(`[INFO] ${message}`, ...data) : null,
+    log: (message, ...data) => this.isDebugEnabled ? console.log(`[DEBUG] ${message}`, ...data) : null,
     
     // Inspect object properties
     inspect: function(obj, name = 'Object') {
@@ -215,192 +218,8 @@
     
     console.log('%c Debug complete. Check console for issues.', 'background: #222; color: #bada55; font-size: 14px; padding: 5px;');
     
-    // Create buttons container
-    const buttonsContainer = document.createElement('div');
-    buttonsContainer.style.position = 'fixed';
-    buttonsContainer.style.bottom = '10px';
-    buttonsContainer.style.right = '10px';
-    buttonsContainer.style.zIndex = '9999';
-    buttonsContainer.style.display = 'flex';
-    buttonsContainer.style.gap = '10px';
-    
-    // Create a debug button for quick access
-    const debugButton = document.createElement('button');
-    debugButton.innerText = '🐛 Debug';
-    debugButton.style.background = '#222';
-    debugButton.style.color = '#bada55';
-    debugButton.style.border = 'none';
-    debugButton.style.borderRadius = '4px';
-    debugButton.style.padding = '8px 12px';
-    debugButton.style.cursor = 'pointer';
-    
-    debugButton.addEventListener('click', function() {
-      console.clear();
-      console.log('%c Debug Analysis', 'background: #222; color: #bada55; font-size: 16px; padding: 10px;');
-      
-      // Run framework analysis
-      window.debug.analyzeFramework();
-      
-      // Display status message
-      showStatusMessage('Debug info logged to console');
-    });
-    
-    // Create game switch buttons
-    const createGameSwitchButton = (gameType, label) => {
-      const button = document.createElement('button');
-      button.innerText = label;
-      button.style.background = '#333';
-      button.style.color = 'white';
-      button.style.border = 'none';
-      button.style.borderRadius = '4px';
-      button.style.padding = '8px 12px';
-      button.style.cursor = 'pointer';
-      
-      button.addEventListener('click', function() {
-        if (window.gameLoader) {
-          // Special direct handling for SlotGame
-          if (gameType === 'slot') {
-            console.log('Debug button: Direct SlotGame creation');
-            try {
-              // Force cleanup of any existing game
-              if (window.gameLoader.activeGame) {
-                window.gameLoader.activeGame = null;
-              }
-              
-              // Remove any cached instance
-              if (window.gameLoader.gameInstances['slot']) {
-                delete window.gameLoader.gameInstances['slot'];
-              }
-              
-              // Create a fresh SlotGame instance directly
-              const slotConfig = {
-                gameTitle: 'Pirate Slots',
-                initialBalance: 1000,
-                initialBet: 10,
-                maxBet: 500,
-                reels: 3,
-                rows: 3,
-                symbols: ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'],
-              };
-              
-              // Define a minimal SlotGame if not available
-              if (typeof window.SlotGame !== 'function') {
-                console.log('SlotGame not available - defining emergency version');
-                window.SlotGame = class SlotGame extends BaseGame {
-                  constructor(config = {}) {
-                    // Include gameLogic in the base config
-                    const fullConfig = Object.assign({}, config, {
-                      gameLogic: {
-                        spin: function(callback) {
-                          if (typeof callback === 'function') {
-                            setTimeout(() => callback({isWin: false}), 1000);
-                          }
-                        },
-                        calculateWin: function() { return 10; },
-                        renderGame: function(ctx, w, h) {
-                          if (!ctx) return;
-                          ctx.font = '48px Arial';
-                          ctx.fillStyle = 'white';
-                          ctx.textAlign = 'center';
-                          ctx.fillText('Debug Slot Game', w/2, h/2);
-                        },
-                        handleWin: function() {},
-                        handleLoss: function() {}
-                      }
-                    });
-                    
-                    // Call super with complete config
-                    super(fullConfig);
-                    
-                    // Set up basic state
-                    this.reelState = [
-                      ['🎁', '💀', '🍾'],
-                      ['💰', '🎁', '💀'],
-                      ['🍾', '💰', '🎁']
-                    ];
-                    
-                    // Ensure gameLogic methods are bound to this instance
-                    if (this.game && this.game.config && this.game.config.gameLogic) {
-                      this.game.config.gameLogic.spin = this.spin.bind(this);
-                      this.game.config.gameLogic.calculateWin = this.calculateWin.bind(this);
-                      this.game.config.gameLogic.renderGame = this.renderGame.bind(this);
-                      this.game.config.gameLogic.handleWin = this.handleWin.bind(this);
-                      this.game.config.gameLogic.handleLoss = this.handleLoss.bind(this);
-                    }
-                  }
-                  
-                  // Implementation of required methods
-                  renderGame(ctx, w, h) {
-                    if (!ctx) return;
-                    ctx.font = '48px Arial';
-                    ctx.fillStyle = 'white';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Debug Slot Game', w/2, h/2);
-                  }
-                  
-                  spin(cb) { 
-                    if (typeof cb === 'function') {
-                      setTimeout(() => cb({isWin: false}), 1000); 
-                    }
-                  }
-                  
-                  calculateWin() { return 10; }
-                  handleWin() {}
-                  handleLoss() {}
-                  cleanup() {}
-                };
-              }
-              
-              // Create new instance with minimal configuration
-              window.gameLoader.gameInstances['slot'] = new window.SlotGame({
-                gameTitle: 'Simple Slots'
-              });
-              
-              // Set as active game
-              window.gameLoader.activeGame = window.gameLoader.gameInstances['slot'];
-              
-              // Update selector
-              if (window.gameLoader.gameSelector) {
-                window.gameLoader.gameSelector.value = 'slot';
-              }
-              
-              // Update title
-              const titleElement = document.querySelector('.game-title');
-              if (titleElement) {
-                titleElement.textContent = 'Slot Game';
-              }
-              
-              // Force redraw
-              setTimeout(() => {
-                if (window.gameLoader.activeGame && 
-                    window.gameLoader.activeGame.game && 
-                    window.gameLoader.activeGame.game.drawCanvas) {
-                  window.gameLoader.activeGame.game.drawCanvas();
-                }
-              }, 100);
-              
-              showStatusMessage(`Direct switch to Slot Game`);
-            } catch (error) {
-              console.error('Error in direct SlotGame creation:', error);
-              // Fallback to normal method
-              window.gameLoader.forceCreateNewGame(gameType);
-              showStatusMessage(`Switched to ${label} (fallback method)`);
-            }
-          } else {
-            // Normal handling for other games
-            window.gameLoader.forceCreateNewGame(gameType);
-            showStatusMessage(`Switched to ${label}`);
-          }
-        } else {
-          showStatusMessage('Game loader not found!', true);
-        }
-      });
-      
-      return button;
-    };
-    
     // Helper to show status messages
-    const showStatusMessage = (message, isError = false) => {
+    window.showStatusMessage = (message, isError = false) => {
       const statusMsg = document.createElement('div');
       statusMsg.textContent = message;
       statusMsg.style.position = 'fixed';
@@ -418,15 +237,6 @@
         statusMsg.remove();
       }, 3000);
     };
-    
-    // Add all buttons to container
-    buttonsContainer.appendChild(debugButton);
-    buttonsContainer.appendChild(createGameSwitchButton('slot', '🎰 Slot'));
-    buttonsContainer.appendChild(createGameSwitchButton('dice', '🎲 Dice'));
-    buttonsContainer.appendChild(createGameSwitchButton('card', '🃏 Card'));
-    
-    // Add container to document
-    document.body.appendChild(buttonsContainer);
     
     // After a delay, run a full analysis
     setTimeout(() => {

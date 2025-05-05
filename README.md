@@ -15,22 +15,35 @@ This framework provides a modular structure for building game prototypes with a 
 - Auto-play functionality
 - Customizable game canvas
 - Information popup with tabs
+- Debug mode toggle for easier development
+- Automated testing functionality
 
 ## File Structure
 
 - `index.html` - The HTML structure
-- `styles.css` - All CSS styling
-- `gameFramework.js` - The core framework
-- `slotGame.js` - An example game implementation
+- `css/styles.css` - All CSS styling
+- `js/core/gameFramework.js` - The core framework class
+- `js/core/gameLoader.js` - Game loading and switching functionality
+- `games/baseGame.js` - Base abstract game class
+- `games/diceGame.js` - Dice game implementation
+- `games/cardGame.js` - Card game implementation
+- `js/utils/debugManager.js` - Debug mode management
+- `js/test.js` - Game framework testing functionality
+- `js/debug.js` - Debug utilities and inspectors
 
 ## Getting Started
 
 1. Include the required files in your HTML:
 
 ```html
-<link rel="stylesheet" href="styles.css">
-<script src="gameFramework.js"></script>
-<script src="yourGame.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+<script src="js/utils/helpers.js"></script>
+<script src="js/utils/animation.js"></script>
+<script src="js/core/gameFramework.js"></script>
+<script src="games/baseGame.js"></script>
+<script src="games/yourGame.js"></script>
+<script src="js/core/gameLoader.js"></script>
+<script src="js/utils/debugManager.js"></script>
 ```
 
 2. Create a new game implementation:
@@ -164,6 +177,33 @@ You can customize almost every aspect of the framework by:
 1. Modifying the CSS variables in `styles.css` to change the appearance
 2. Extending the `GameFramework` class to add more functionality
 3. Creating your own game implementations with unique logic and visuals
+
+## Debug and Testing Features
+
+The framework includes built-in debug and testing capabilities to make development easier:
+
+### Debug Mode
+
+The debug toggle in the top control panel allows you to:
+
+- Enable/disable console logging throughout the application
+- Persist debug preference between sessions using localStorage
+- See immediate visual feedback when debug mode is toggled
+
+When debug mode is enabled, all console logs are active. When disabled, most logs are suppressed except for errors.
+
+### Automated Testing
+
+The "Run Tests" button in the top control panel:
+
+- Runs a comprehensive suite of tests against the framework
+- Verifies all game classes are properly defined and available
+- Tests inheritance relationships between game classes
+- Checks UI element references and event handlers
+- Temporarily enables debug mode during tests if it's disabled
+- Provides visual feedback on test progress and completion
+
+Debug utilities found in `js/debug.js` and `js/utils/debugManager.js` provide additional tools for inspecting game state and analyzing the framework.
 
 ## License
 

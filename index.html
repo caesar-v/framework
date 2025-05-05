@@ -38,6 +38,21 @@
           <option value="classic">Classic Casino</option>
         </select>
       </div>
+      
+      <div class="debug-controls">
+        <span class="control-label">Debug:</span>
+        <div class="toggle-switch-wrapper">
+          <label class="toggle-switch">
+            <input type="checkbox" id="debug-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button id="debug-button" class="btn btn-outline">🐛 Analyze</button>
+      </div>
+      
+      <div class="test-controls">
+        <button id="autotest-button" class="btn btn-outline">Run Tests</button>
+      </div>
     </div>
     
     <div id="game-container" class="game-container pc">
@@ -224,6 +239,7 @@
   <!-- Debug tools -->
   <script src="js/debug.js"></script>
   <script src="js/test.js"></script>
+  <script src="js/utils/debugManager.js"></script>
   
   <script>
     // Initialize immediately to ensure gameLoader is available

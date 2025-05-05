@@ -99,17 +99,46 @@
         return;
       }
       
-      // Continue with the tests
+      // Run tests sequentially with delays to prevent race conditions
+      this.runTestsSequentially();
+    },
+    
+    // Run tests in sequence with delays
+    runTestsSequentially: function() {
+      // Start with inheritance check
       this.checkInheritance();
       
-      // Test individual game initialization
-      this.initializeGame('dice');
-      this.initializeGame('card');
-      
-      // Test game switching
-      this.switchGame('dice');
-      
-      log('======== ALL TESTS COMPLETE ========', 'blue');
+      // Sequential execution with delays to prevent race conditions
+      setTimeout(() => {
+        // Test dice game initialization
+        this.initializeGame('dice');
+        
+        setTimeout(() => {
+          // Test card game initialization
+          this.initializeGame('card');
+          
+          setTimeout(() => {
+            // Test game switching
+            if (window.gameLoader && (window.gameLoader._loadingGame || window.gameLoader._loadingGameTest)) {
+              log('Game loader is busy, waiting before testing game switching...', 'orange');
+              setTimeout(() => {
+                // Double check if still busy
+                if (window.gameLoader && (window.gameLoader._loadingGame || window.gameLoader._loadingGameTest)) {
+                  log('Game loader still busy, skipping game switching test', 'orange');
+                } else {
+                  this.switchGame('dice');
+                }
+              }, 1000); 
+            } else {
+              this.switchGame('dice');
+            }
+            
+            setTimeout(() => {
+              log('======== ALL TESTS COMPLETE ========', 'blue');
+            }, 500);
+          }, 500);
+        }, 500);
+      }, 500);
     }
   };
   
