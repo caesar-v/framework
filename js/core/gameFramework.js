@@ -82,6 +82,23 @@ class GameFramework {
      * Set up DOM elements and event listeners
      */
     init() {
+      console.log('GameFramework.init() called');
+      
+      // Wait for DOM to be ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this._initAfterDOM());
+      } else {
+        this._initAfterDOM();
+      }
+    }
+    
+    /**
+     * Initialize after DOM is loaded
+     * @private
+     */
+    _initAfterDOM() {
+      console.log('GameFramework._initAfterDOM() called');
+      
       // Set the game title
       document.title = this.config.gameTitle;
       
@@ -139,52 +156,63 @@ class GameFramework {
      * Set up event listeners for all interactive elements
      */
     setupEventListeners() {
+      console.log('Setting up event listeners');
+      
+      // Helper function to safely add event listeners
+      const safeAddEventListener = (element, event, handler) => {
+        if (!element) {
+          console.error(`Cannot add ${event} listener - element is undefined`);
+          return false;
+        }
+        
+        try {
+          element.addEventListener(event, handler);
+          return true;
+        } catch (e) {
+          console.error(`Error adding ${event} listener:`, e);
+          return false;
+        }
+      };
+      
       // Theme selection
-      this.elements.themeSelect.addEventListener('change', () => {
+      safeAddEventListener(this.elements.themeSelect, 'change', () => {
         this.changeTheme(this.elements.themeSelect.value);
       });
   
-      // Layout selection
-      this.elements.desktopLayout.addEventListener('change', () => {
-        if (this.elements.desktopLayout.checked) {
-          this.switchLayout('pc');
-        }
-      });
-  
-      this.elements.mobileLayout.addEventListener('change', () => {
-        if (this.elements.mobileLayout.checked) {
-          this.switchLayout('mobile');
-        }
-      });
+    // Note: We're removing the layout selection event listeners 
+    // because the GameLoader will now handle these events
+    // Layout selection will be controlled externally via the switchLayout method
   
       // Sound toggle
-      this.elements.soundButton.addEventListener('click', () => this.toggleSound());
+      safeAddEventListener(this.elements.soundButton, 'click', () => this.toggleSound());
   
       // Menu handling
-      this.elements.menuButton.addEventListener('click', () => this.toggleMenu(true));
-      this.elements.closeMenu.addEventListener('click', () => this.toggleMenu(false));
-      this.elements.menuOverlay.addEventListener('click', (e) => {
+      safeAddEventListener(this.elements.menuButton, 'click', () => this.toggleMenu(true));
+      safeAddEventListener(this.elements.closeMenu, 'click', () => this.toggleMenu(false));
+      safeAddEventListener(this.elements.menuOverlay, 'click', (e) => {
         if (e.target === this.elements.menuOverlay) {
           this.toggleMenu(false);
         }
       });
   
       // Tab navigation
-      this.elements.popupTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          this.switchTab(tab.dataset.tab);
+      if (this.elements.popupTabs) {
+        this.elements.popupTabs.forEach(tab => {
+          safeAddEventListener(tab, 'click', () => {
+            this.switchTab(tab.dataset.tab);
+          });
         });
-      });
+      }
   
       // Play mode tabs
-      this.elements.manualTab.addEventListener('click', () => {
+      safeAddEventListener(this.elements.manualTab, 'click', () => {
         this.state.autoPlay = false;
         this.elements.manualTab.classList.add('active');
         this.elements.autoTab.classList.remove('active');
         this.elements.spinButton.textContent = 'SPIN';
       });
   
-      this.elements.autoTab.addEventListener('click', () => {
+      safeAddEventListener(this.elements.autoTab, 'click', () => {
         this.state.autoPlay = true;
         this.elements.autoTab.classList.add('active');
         this.elements.manualTab.classList.remove('active');
@@ -192,42 +220,46 @@ class GameFramework {
       });
   
       // Spin button
-      this.elements.spinButton.addEventListener('click', () => this.spin());
+      safeAddEventListener(this.elements.spinButton, 'click', () => this.spin());
   
       // Bet controls
-      this.elements.decreaseBet.addEventListener('click', () => {
+      safeAddEventListener(this.elements.decreaseBet, 'click', () => {
         if (this.state.isSpinning) return;
         this.state.betAmount = Math.max(1, this.state.betAmount - 1);
         this.elements.betInput.value = this.state.betAmount;
         this.updatePotentialWin();
       });
   
-      this.elements.increaseBet.addEventListener('click', () => {
+      safeAddEventListener(this.elements.increaseBet, 'click', () => {
         if (this.state.isSpinning) return;
         this.state.betAmount = Math.min(this.state.maxBet, this.state.betAmount + 1);
         this.elements.betInput.value = this.state.betAmount;
         this.updatePotentialWin();
       });
   
-      this.elements.halfBet.addEventListener('click', () => this.setHalfBet());
-      this.elements.maxBet.addEventListener('click', () => this.setMaxBet());
+      safeAddEventListener(this.elements.halfBet, 'click', () => this.setHalfBet());
+      safeAddEventListener(this.elements.maxBet, 'click', () => this.setMaxBet());
   
       // Quick bet buttons
-      this.elements.quickBets.forEach(button => {
-        button.addEventListener('click', () => {
-          if (this.state.isSpinning || !button.dataset.bet) return;
-          this.state.betAmount = parseInt(button.dataset.bet);
-          this.elements.betInput.value = this.state.betAmount;
-          this.updatePotentialWin();
+      if (this.elements.quickBets) {
+        this.elements.quickBets.forEach(button => {
+          safeAddEventListener(button, 'click', () => {
+            if (this.state.isSpinning || !button.dataset.bet) return;
+            this.state.betAmount = parseInt(button.dataset.bet);
+            this.elements.betInput.value = this.state.betAmount;
+            this.updatePotentialWin();
+          });
         });
-      });
+      }
   
       // Risk level change
-      this.elements.riskLevel.addEventListener('change', () => {
+      safeAddEventListener(this.elements.riskLevel, 'change', () => {
         if (this.state.isSpinning) return;
         this.state.riskLevel = this.elements.riskLevel.value;
         this.updatePotentialWin();
       });
+      
+      console.log('All event listeners set up successfully');
   
       // Window resize
       window.addEventListener('resize', () => {

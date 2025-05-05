@@ -4,10 +4,14 @@
  * This demonstrates how to create a dice game using the framework
  */
 
-class DiceGame {
+class DiceGame extends BaseGame {
     constructor(config = {}) {
       // Default dice configuration
-      this.config = {
+      const diceConfig = {
+        gameTitle: 'Lucky Dice',
+        initialBalance: 1000,
+        initialBet: 10,
+        maxBet: 500,
         numDice: 3,
         diceSize: 80,
         diceColors: ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'],
@@ -16,9 +20,15 @@ class DiceGame {
           'allSame': 5,       // All dice show the same value
           'straight': 3,      // Consecutive values (e.g., 1-2-3 or 4-5-6)
           'onePair': 1.5,     // At least two dice show the same value
-        },
-        ...config
+        }
       };
+      
+      // Merge configs and call parent constructor
+      const mergedConfig = {...diceConfig, ...config};
+      super(mergedConfig);
+      
+      // Ensure this.config is set correctly
+      this.config = mergedConfig;
       
       // Current dice values
       this.diceValues = [];
@@ -30,22 +40,6 @@ class DiceGame {
       
       // Initialize dice
       this.initDice();
-      
-      // Create the game
-      this.game = new GameFramework({
-        gameTitle: 'Lucky Dice',
-        initialBalance: 1000,
-        initialBet: 10,
-        maxBet: 500,
-        // Custom game logic
-        gameLogic: {
-          spin: this.spin.bind(this),
-          calculateWin: this.calculateWin.bind(this),
-          renderGame: this.renderGame.bind(this),
-          handleWin: this.handleWin.bind(this),
-          handleLoss: this.handleLoss.bind(this)
-        }
-      });
       
       // Start animation loop
       this.animate();
@@ -75,6 +69,34 @@ class DiceGame {
           x: (Math.random() - 0.5) * 100,
           y: (Math.random() - 0.5) * 100
         });
+      }
+    }
+    
+    /**
+     * Validate the configuration
+     * @param {Object} config - The configuration object
+     */
+    validateConfig(config) {
+      // Call parent method if needed
+      super.validateConfig(config);
+      
+      // Use the passed config object for validation
+      // Add safety checks to prevent undefined access
+      if (!config) {
+        console.warn('Invalid configuration object passed to DiceGame');
+        return;
+      }
+      
+      if (!config.diceColors || !Array.isArray(config.diceColors) || config.diceColors.length === 0) {
+        console.warn('No dice colors provided in configuration');
+      }
+      
+      if (!config.numDice || typeof config.numDice !== 'number' || config.numDice <= 0) {
+        console.warn('Invalid numDice configuration provided');
+      }
+      
+      if (!config.winningConditions || typeof config.winningConditions !== 'object') {
+        console.warn('Invalid winningConditions configuration provided');
       }
     }
     
@@ -465,7 +487,5 @@ class DiceGame {
     }
   }
   
-  // Initialize the dice game when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    const game = new DiceGame();
-  });
+// Export to global scope
+window.DiceGame = DiceGame;

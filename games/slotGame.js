@@ -4,10 +4,14 @@
  * This demonstrates how to create a simple slot game using the framework
  */
 
-class SlotGame {
+class SlotGame extends BaseGame {
     constructor(config = {}) {
       // Default slot configuration
-      this.config = {
+      const slotConfig = {
+        gameTitle: 'Pirate Slots',
+        initialBalance: 1000,
+        initialBet: 10,
+        maxBet: 500,
         reels: 3,
         rows: 3,
         symbols: ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'],
@@ -19,31 +23,49 @@ class SlotGame {
           '🍾': 3,
           '💰': 2,
           '🏴‍☠️': 1
-        },
-        ...config
+        }
       };
+      
+      // Merge configs and call parent constructor
+      const mergedConfig = {...slotConfig, ...config};
+      super(mergedConfig);
+      
+      // Ensure this.config is set correctly
+      this.config = mergedConfig;
       
       // Current reel state
       this.reelState = [];
       
       // Initialize reels
       this.initReels();
+    }
+    
+    /**
+     * Validate the configuration
+     * @param {Object} config - The configuration object
+     */
+    validateConfig(config) {
+      // Call parent method if needed
+      super.validateConfig(config);
       
-      // Create the game
-      this.game = new GameFramework({
-        gameTitle: 'Pirate Slots',
-        initialBalance: 1000,
-        initialBet: 10,
-        maxBet: 500,
-        // Custom game logic
-        gameLogic: {
-          spin: this.spin.bind(this),
-          calculateWin: this.calculateWin.bind(this),
-          renderGame: this.renderGame.bind(this),
-          handleWin: this.handleWin.bind(this),
-          handleLoss: this.handleLoss.bind(this)
-        }
-      });
+      // Use the passed config object for validation
+      // Add safety checks to prevent undefined access
+      if (!config) {
+        console.warn('Invalid configuration object passed to SlotGame');
+        return;
+      }
+      
+      if (!config.symbols || !Array.isArray(config.symbols) || config.symbols.length === 0) {
+        console.warn('No symbols provided in slot configuration');
+      }
+      
+      if (!config.reels || typeof config.reels !== 'number' || config.reels <= 0) {
+        console.warn('Invalid reels configuration provided');
+      }
+      
+      if (!config.rows || typeof config.rows !== 'number' || config.rows <= 0) {
+        console.warn('Invalid rows configuration provided');
+      }
     }
     
     /**
@@ -52,14 +74,21 @@ class SlotGame {
     initReels() {
       this.reelState = [];
       
-      for (let i = 0; i < this.config.reels; i++) {
+      // Ensure config has necessary properties
+      const reels = this.config && this.config.reels ? this.config.reels : 3;
+      const rows = this.config && this.config.rows ? this.config.rows : 3;
+      const symbols = this.config && this.config.symbols ? this.config.symbols : ['🎁', '💀', '🗺️', '🧭', '🍾', '💰', '🏴‍☠️'];
+      
+      for (let i = 0; i < reels; i++) {
         const reel = [];
-        for (let j = 0; j < this.config.rows; j++) {
-          const randomIndex = Math.floor(Math.random() * this.config.symbols.length);
-          reel.push(this.config.symbols[randomIndex]);
+        for (let j = 0; j < rows; j++) {
+          const randomIndex = Math.floor(Math.random() * symbols.length);
+          reel.push(symbols[randomIndex]);
         }
         this.reelState.push(reel);
       }
+      
+      console.log('Reels initialized:', this.reelState);
     }
     
     /**
@@ -136,14 +165,23 @@ class SlotGame {
      * @param {Object} state - The game state
      */
     renderGame(ctx, width, height, state) {
+      // Add debug information about the configuration and reelState
+      console.log('SlotGame.renderGame - config:', this.config);
+      console.log('SlotGame.renderGame - reelState:', this.reelState);
+      
       const centerX = width / 2;
       const centerY = height / 2;
       
-      // Define slot machine dimensions
+      // Define slot machine dimensions with fallbacks
       const slotWidth = 600;
       const slotHeight = 400;
-      const reelWidth = slotWidth / this.config.reels;
-      const symbolHeight = slotHeight / this.config.rows;
+      
+      // Ensure config has necessary properties for rendering
+      const reels = this.config && this.config.reels ? this.config.reels : 3;
+      const rows = this.config && this.config.rows ? this.config.rows : 3;
+      
+      const reelWidth = slotWidth / reels;
+      const symbolHeight = slotHeight / rows;
       
       // Draw slot machine frame
       ctx.fillStyle = '#333';
@@ -160,7 +198,7 @@ class SlotGame {
       ctx.fillText('Pirate Slots', centerX, centerY - slotHeight/2 - 60);
       
       // Draw reels and symbols
-      for (let i = 0; i < this.config.reels; i++) {
+      for (let i = 0; i < reels; i++) {
         // Draw reel background
         ctx.fillStyle = '#111';
         ctx.fillRect(
@@ -171,8 +209,8 @@ class SlotGame {
         );
         
         // Draw symbols
-        for (let j = 0; j < this.config.rows; j++) {
-          if (this.reelState[i] && this.reelState[i][j]) {
+        for (let j = 0; j < rows; j++) {
+          if (this.reelState && this.reelState[i] && this.reelState[i][j]) {
             ctx.font = `${symbolHeight * 0.6}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -251,7 +289,5 @@ class SlotGame {
     }
   }
   
-  // Initialize the slot game when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    const game = new SlotGame();
-  });
+// Export to global scope
+window.SlotGame = SlotGame;

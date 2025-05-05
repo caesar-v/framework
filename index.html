@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Prototyping Framework</title>
   <link rel="stylesheet" href="css/styles.css">
-  <script src="js/gameFramework.js"></script>
-  <script src="games/slotGame.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <!-- Script loading will be handled dynamically by the loader -->
 </head>
 <body>
   <div class="outer-container">
@@ -23,6 +21,14 @@
           <span class="toggle-indicator"></span>
         </div>
       </div>
+    <div class="game-selector-controls">
+        <label class="control-label" for="game-select">Game:</label>
+        <select id="game-select" class="control-select">
+            <option value="slot">Slot Game</option>
+            <option value="dice">Dice Game</option>
+            <option value="card">Card Game</option>
+        </select>
+    </div>
       
       <div class="theme-controls">
         <label class="control-label" for="theme-select">Theme:</label>
@@ -181,8 +187,90 @@
     </div>
   </div>
   
-  <!-- Load the framework and game implementation -->
-  <script src="gameFramework.js"></script>
-  <script src="slotGame.js"></script>
+  <!-- Load core framework scripts in the correct order -->
+  <script src="js/config.js"></script>
+  <script src="js/utils/animation.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/core/gameFramework.js"></script>
+
+  <!-- Wait for framework to load before loading game classes -->
+  <script>
+    // Make sure GameFramework is defined
+    if (typeof GameFramework === 'undefined') {
+      console.error('GameFramework is not defined! Games will not work correctly.');
+    } else {
+      console.log('GameFramework loaded successfully.');
+    }
+  </script>
+  
+  <!-- Base game must be loaded before game implementations -->
+  <script src="games/baseGame.js"></script>
+  
+  <script>
+    // Make sure BaseGame is defined
+    if (typeof BaseGame === 'undefined') {
+      console.error('BaseGame is not defined! Games will not work correctly.');
+    } else {
+      console.log('BaseGame loaded successfully.');
+    }
+  </script>
+  
+  <!-- Game implementations - depends on BaseGame -->
+  <script src="games/slotGame.js"></script>
+  <script src="games/diceGame.js"></script>
+  <script src="games/cardGame.js"></script>
+  
+  <!-- Game loader - depends on all game classes -->
+  <script src="js/core/gameLoader.js"></script>
+  
+  <!-- Debug tools -->
+  <script src="js/debug.js"></script>
+  <script src="js/test.js"></script>
+  
+  <script>
+    // Initialize immediately to ensure gameLoader is available
+    console.log("Initializing game loader");
+    
+    // Make sure we're only creating one instance
+    if (!window.gameLoader && typeof GameLoader !== 'undefined') {
+      // Explicitly create in global scope
+      window.gameLoader = new GameLoader();
+      console.log("GameLoader created:", window.gameLoader);
+    } else {
+      console.log("GameLoader status:", {
+        inWindow: !!window.gameLoader,
+        constructorAvailable: typeof GameLoader !== 'undefined'
+      });
+    }
+    
+    // Set up additional events when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("DOM Content Loaded - Setting up extra event handlers");
+      
+      // Log all available game classes
+      console.log("Available game classes:", {
+        GameFramework: typeof GameFramework !== 'undefined',
+        BaseGame: typeof BaseGame !== 'undefined',
+        SlotGame: typeof SlotGame !== 'undefined',
+        DiceGame: typeof DiceGame !== 'undefined',
+        CardGame: typeof CardGame !== 'undefined'
+      });
+      
+      // Set up layout switching
+      document.getElementById('desktop').addEventListener('change', function() {
+        console.log("Desktop layout selected");
+        if (this.checked && window.gameLoader && window.gameLoader.activeGame) {
+          window.gameLoader.activeGame.game.switchLayout('pc');
+        }
+      });
+      
+      document.getElementById('mobile').addEventListener('change', function() {
+        console.log("Mobile layout selected");
+        if (this.checked && window.gameLoader && window.gameLoader.activeGame) {
+          window.gameLoader.activeGame.game.switchLayout('mobile');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

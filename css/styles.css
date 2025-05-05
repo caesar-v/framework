@@ -808,4 +808,34 @@
     .popup {
       width: 95%;
     }
+    /* Add this to your styles.css file */
+  .game-selector-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+  }
+
+  /* For mobile layout */
+  @media (max-width: 768px) {
+    .top-controls {
+      flex-wrap: wrap;
+    }
+    
+    .game-selector-controls {
+      margin-left: 0;
+      margin-top: 10px;
+    }
+  }
+  #game-container {
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  #game-container.fade-out {
+    opacity: 0;
+  }
+
+  #game-container.fade-in {
+    opacity: 1;
+  }
   }

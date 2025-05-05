@@ -4,10 +4,14 @@
  * This demonstrates how to create a simple card game using the framework
  */
 
-class CardGame {
+class CardGame extends BaseGame {
     constructor(config = {}) {
       // Default card game configuration
-      this.config = {
+      const cardConfig = {
+        gameTitle: 'Card Master',
+        initialBalance: 1000,
+        initialBet: 10,
+        maxBet: 500,
         numCards: 5,
         cardWidth: 120,
         cardHeight: 180,
@@ -27,9 +31,15 @@ class CardGame {
           'flush': 6,       // 5 cards of same suit
           'pair': 2,        // At least one pair
           'high': 1.5       // Just high card (A, K, Q, J)
-        },
-        ...config
+        }
       };
+      
+      // Merge configs and call parent constructor
+      const mergedConfig = {...cardConfig, ...config};
+      super(mergedConfig);
+      
+      // Ensure this.config is set correctly
+      this.config = mergedConfig;
       
       // Current cards
       this.cards = [];
@@ -42,22 +52,6 @@ class CardGame {
       
       // Initialize deck
       this.initDeck();
-      
-      // Create the game
-      this.game = new GameFramework({
-        gameTitle: 'Card Master',
-        initialBalance: 1000,
-        initialBet: 10,
-        maxBet: 500,
-        // Custom game logic
-        gameLogic: {
-          spin: this.spin.bind(this),
-          calculateWin: this.calculateWin.bind(this),
-          renderGame: this.renderGame.bind(this),
-          handleWin: this.handleWin.bind(this),
-          handleLoss: this.handleLoss.bind(this)
-        }
-      });
       
       // Start animation loop
       this.animate();
@@ -109,6 +103,38 @@ class CardGame {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+    
+    /**
+     * Validate the configuration
+     * @param {Object} config - The configuration object
+     */
+    validateConfig(config) {
+      // Call parent method if needed
+      super.validateConfig(config);
+      
+      // Use the passed config object for validation
+      // Add safety checks to prevent undefined access
+      if (!config) {
+        console.warn('Invalid configuration object passed to CardGame');
+        return;
+      }
+      
+      if (!config.suits || !Array.isArray(config.suits) || config.suits.length === 0) {
+        console.warn('No suits provided in card game configuration');
+      }
+      
+      if (!config.values || !Array.isArray(config.values) || config.values.length === 0) {
+        console.warn('No card values provided in card game configuration');
+      }
+      
+      if (!config.numCards || typeof config.numCards !== 'number' || config.numCards <= 0) {
+        console.warn('Invalid numCards configuration provided');
+      }
+      
+      if (!config.winningHands || typeof config.winningHands !== 'object') {
+        console.warn('Invalid winningHands configuration provided');
       }
     }
     
@@ -555,7 +581,6 @@ class CardGame {
     }
   }
   
-  // Initialize the card game when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    const game = new CardGame();
-  });
+// Export to global scope
+window.CardGame = CardGame;
+  
