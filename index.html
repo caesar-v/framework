@@ -445,11 +445,43 @@
     // Initialize immediately to ensure gameLoader is available
     console.log("Initializing game loader");
     
+    // Глобальный обработчик ошибок для восстановления игрового состояния
+    window.addEventListener('error', function(event) {
+      console.error('Global error caught:', event.error);
+      
+      // Проверить, загружена ли игра
+      if (window.gameLoader && !window.gameLoader.activeGame) {
+        console.log('Error recovery: No active game detected, attempting to load default game');
+        
+        // Сбросить флаги загрузки перед повторной попыткой
+        if (window.gameLoader._creatingGame) window.gameLoader._creatingGame = false;
+        if (window.gameLoader._loadingGame) window.gameLoader._loadingGame = false;
+        if (window.gameLoader._loadingGameTest) window.gameLoader._loadingGameTest = false;
+        
+        // Попытка загрузить игру по умолчанию
+        setTimeout(function() {
+          try {
+            window.gameLoader.forceCreateNewGame('dice');
+          } catch (e) {
+            console.error('Failed to recover game state:', e);
+          }
+        }, 500);
+      }
+    });
+    
     // Make sure we're only creating one instance
     if (!window.gameLoader && typeof GameLoader !== 'undefined') {
       // Explicitly create in global scope
       window.gameLoader = new GameLoader();
       console.log("GameLoader created:", window.gameLoader);
+      
+      // Дополнительная проверка через 2 секунды
+      setTimeout(function() {
+        if (window.gameLoader && !window.gameLoader.activeGame) {
+          console.log('No active game after 2s, forcing default game loading');
+          window.gameLoader.forceCreateNewGame('dice');
+        }
+      }, 2000);
     } else {
       console.log("GameLoader status:", {
         inWindow: !!window.gameLoader,

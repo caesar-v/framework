@@ -66,11 +66,38 @@ class GameLoader {
         }
       });
       
-      // Load the default game
+      // Установить начальное значение, если не выбрано
+      if (!this.gameSelector.value) {
+        // Выбрать первую опцию из списка по умолчанию
+        if (this.gameSelector.options && this.gameSelector.options.length > 0) {
+          this.gameSelector.value = this.gameSelector.options[0].value;
+        } else {
+          // Если нет опций, использовать "dice" как значение по умолчанию
+          this.gameSelector.value = "dice";
+        }
+        console.log('Set default game to:', this.gameSelector.value);
+      }
+      
+      // Гарантированная загрузка игры по умолчанию
+      // Используем forceCreateNewGame вместо loadGame для надежности
       console.log('Loading default game:', this.gameSelector.value);
-      this.loadGame(this.gameSelector.value);
+      
+      // Использовать таймаут, чтобы дать возможность DOM полностью загрузиться
+      setTimeout(() => {
+        // Проверка, что игра еще не была загружена
+        if (!this.activeGame) {
+          console.log('Forcing default game creation:', this.gameSelector.value);
+          this.forceCreateNewGame(this.gameSelector.value);
+        }
+      }, 100);
     } else {
       console.error('Game selector not found, cannot load games');
+      
+      // Аварийное восстановление - попытаться загрузить игру даже без селектора
+      console.log('Emergency recovery: trying to load Dice Game without selector');
+      setTimeout(() => {
+        this.forceCreateNewGame('dice');
+      }, 200);
     }
   }
   
@@ -79,6 +106,14 @@ class GameLoader {
    * Simplified implementation without SlotGame references
    */
   forceCreateNewGame(gameType) {
+    // Проверить, что тип игры указан
+    if (!gameType) {
+      console.error('Game type not specified for forceCreateNewGame');
+      // Установить значение по умолчанию
+      gameType = 'dice';
+      console.log('Using default game type:', gameType);
+    }
+
     // CRITICAL FIX: Prevent recursive calls and infinite loops
     if (this._creatingGame) {
       console.warn('Already creating a game, ignoring additional request');
