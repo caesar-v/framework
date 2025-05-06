@@ -1,0 +1,166 @@
+/**
+ * Стили для модульного тестового фреймворка
+ */
+
+/* Тестовый контейнер */
+#test-environment-container {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 800px;
+  height: 600px;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  contain: strict;
+  z-index: -1;
+}
+
+/* Тестовая панель */
+#test-environment-panel {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 350px;
+  max-height: 80vh;
+  background-color: rgba(40, 42, 54, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #f8f8f2;
+  font-family: monospace;
+  z-index: 999;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#test-environment-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Заголовок панели */
+#test-environment-panel > div:first-child {
+  padding: 12px 16px;
+  background-color: #6272a4;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#test-environment-panel h2 {
+  margin: 0;
+  color: #f8f8f2;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#test-environment-panel button {
+  background: none;
+  border: none;
+  color: #f8f8f2;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+/* Содержимое панели */
+#test-environment-content {
+  padding: 16px;
+  max-height: calc(80vh - 44px);
+  overflow-y: auto;
+}
+
+/* Результаты тестов */
+#test-environment-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#test-environment-results > div {
+  margin-bottom: 8px;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+/* Разные статусы тестов */
+.test-status-running {
+  background-color: rgba(80, 250, 123, 0.1);
+  border-left: 3px solid #50fa7b;
+}
+
+.test-status-success {
+  background-color: rgba(80, 250, 123, 0.2);
+  border-left: 3px solid #50fa7b;
+}
+
+.test-status-error {
+  background-color: rgba(255, 85, 85, 0.2);
+  border-left: 3px solid #ff5555;
+}
+
+.test-status-skipped {
+  background-color: rgba(241, 250, 140, 0.1);
+  border-left: 3px solid #f1fa8c;
+}
+
+/* Кнопка отмены тестов */
+#cancel-tests-button {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background-color: #ff5555;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#cancel-tests-button:hover {
+  background-color: #ff3333;
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Защитные стили для предотвращения влияния тестов на DOM */
+body.test-environment-active #menu-overlay {
+  position: fixed !important;
+  z-index: 1000 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+body.test-environment-active .popup {
+  position: relative !important;
+  margin: 50px auto !important;
+  max-width: 90% !important;
+  z-index: 1001 !important;
+}
+
+body.test-environment-active .game-content {
+  contain: layout style;
+}
+
+/* При активных тестах предотвращаем запуск анимаций */
+body.test-environment-active * {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+}
+
+/* Удаляем любые трансформации, которые могут быть добавлены тестами */
+body.test-environment-active .popup {
+  transform: none !important;
+}

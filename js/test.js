@@ -142,15 +142,12 @@
     }
   };
   
-  // Wait for DOM to be fully loaded
+  // Wait for DOM to be fully loaded - но не запускать тесты автоматически
   document.addEventListener('DOMContentLoaded', function() {
-    log('Starting comprehensive framework test', 'blue');
+    log('Framework test module loaded - tests will only run when manually triggered', 'blue');
     
-    // Run enhanced tests after a delay to allow normal initialization
-    setTimeout(() => window.test.runAllTests(), 2000);
-    
-    // Then run basic UI tests
-    testGameLoader();
+    // Не запускаем тесты автоматически, только по запросу
+    // Основной запуск теперь через testFramework.js
   });
   
   function testGameLoader() {
@@ -184,7 +181,9 @@
     
     // Get references to game framework and active game
     const activeGame = window.gameLoader.activeGame;
-    const framework = activeGame.game;
+    
+    // In our refactored architecture, the active game has a framework property instead of a game property
+    const framework = activeGame.framework || activeGame.game;
     
     if (!framework) {
       log('Game framework not found!', 'red');
@@ -193,13 +192,30 @@
     
     log('Game framework found', 'green');
     
-    // Test elements object
-    if (!framework.elements) {
-      log('Elements object not found!', 'red');
-      return;
+    // Test if this is the new modular framework by checking for modules
+    if (framework.modules) {
+      log('Detected new modular framework!', 'green');
+      
+      // Test elements in the UI manager
+      if (!framework.modules.ui || !framework.modules.ui.elements) {
+        log('UI manager or elements object not found!', 'red');
+        return;
+      }
+      
+      log('UI manager and elements found', 'green');
+      
+      // Store elements reference for later
+      framework.elements = framework.modules.ui.elements;
+    } else {
+      // Legacy framework
+      // Test elements object
+      if (!framework.elements) {
+        log('Elements object not found!', 'red');
+        return;
+      }
+      
+      log('Elements object found (legacy framework)', 'green');
     }
-    
-    log('Elements object found', 'green');
     
     // Test UI element references
     const elementTests = [
@@ -236,7 +252,7 @@
     // These are the essential elements to check
     const elementSelectors = {
       'container': '#game-container',
-      'gameTitle': '.game-title',
+      'gameTitle': '.game-title, .portal-title', // Look for either game-title or portal-title
       'canvas': '#game-canvas',
       'themeSelect': '#theme-select',
       'soundButton': '#sound-button',
@@ -281,8 +297,12 @@
       }
     }
     
-    // Re-attach event listeners
-    framework.setupEventListeners();
+    // Re-attach event listeners through UI manager if available
+    if (framework.modules && framework.modules.ui) {
+      framework.modules.ui.setupEventListeners();
+    } else {
+      console.warn('Cannot setup event listeners - UI manager not found');
+    }
     
     // Continue testing
     testEventHandlers(framework);

@@ -15,7 +15,7 @@
     <div id="game-container" class="game-container pc">
       <header class="header">
         <div class="header-left">
-          <h1 class="portal-title">Lucky Coins</h1>
+          <h1 class="portal-title game-title">Lucky Coins</h1>
           
           <!-- Game Search Bar -->
           <div class="search-bar">
@@ -284,7 +284,7 @@
           
           <!-- Test Controls -->
           <div class="test-controls">
-            <button id="autotest-button">Run Tests</button>
+            <button id="autotest-button" style="background-color: #6272a4; color: #f8f8f2; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer;">Run Framework Tests</button>
           </div>
         </div>
       </div>
@@ -351,56 +351,49 @@
     </div>
   </div>
   
-  <!-- External libraries -->
-  <!-- Try using the regular PIXI version instead of 8.0.2 which has WebGL initialization issues -->
-  <script src="js/lib/pixi.min.js"></script>
-  <!-- PIXI.js initialization -->
+  <!-- Note: PIXI has been removed from the core framework -->
   <script>
     /**
-     * IMPORTANT: PIXI is disabled by default in this version.
-     * The current PIXI version available in this project has compatibility issues with 
-     * either WebGL or the CanvasRenderer implementation. Games will use Canvas2D rendering
-     * by default for better compatibility.
+     * PIXI has been removed from the core framework.
+     * Games will now use Canvas2D rendering by default for better compatibility.
      * 
-     * If you want to enable PIXI in specific games:
+     * If you want to use PIXI in specific games:
      * 1. Create a custom game class
-     * 2. Set config.usePixi = true in your game constructor
-     * 3. Implement a renderGameWithPixi method that handles PIXI rendering
+     * 2. Import PIXI directly in that game file
+     * 3. Implement your own rendering using PIXI within your game class
      */
      
-    // Set up PIXI load detection (for debug purposes)
-    window.addEventListener('load', function() {
-      if (window.PIXI) {
-        console.log('PIXI.js loaded but NOT USED by default, version:', window.PIXI.VERSION || 'unknown');
-        console.log('PIXI is disabled by default due to compatibility issues');
-        
-        // Log available renderers (for diagnosis)
-        if (window.PIXI.autoDetectRenderer) {
-          console.log('PIXI can use autoDetectRenderer');
-        }
-        if (window.PIXI.CanvasRenderer) {
-          console.log('PIXI CanvasRenderer is available');
-        }
-        if (window.PIXI.Renderer) {
-          console.log('PIXI Renderer (WebGL) is available');
-        }
-        
-        // Notify system that PIXI is loaded but we'll still use Canvas2D by default
-        window.dispatchEvent(new CustomEvent('pixiloaded'));
-      } else {
-        console.warn('PIXI.js failed to load, using Canvas2D rendering');
-        window.dispatchEvent(new CustomEvent('pixifailed'));
-      }
-    });
+    console.log('Using Canvas2D rendering (PIXI removed from core framework)');
   </script>
   
-  <!-- Load core framework scripts in the correct order -->
+  <!-- Module Loader Debug - helps identify and fix module loading errors -->
+  <script src="js/debugModuleLoader.js"></script>
+  
+  <!-- Ensures content.bundle.js loads correctly -->
+  <script>
+    // Create a global variable to handle bundle content
+    window.contentBundle = window.contentBundle || {
+      loaded: true,
+      timestamp: new Date().toISOString()
+    };
+  </script>
+  
+  <!-- Load core framework scripts with the modular approach -->
   <script src="js/config.js"></script>
-  <script src="js/utils/animation.js"></script>
+  
+  <!-- Load utility modules first -->
   <script src="js/utils/helpers.js"></script>
-  <script src="js/utils/pixiHelper.js"></script>
+  <script src="js/utils/animation.js"></script>
+  
+  <!-- Load core modules in order -->
+  <script src="js/core/CanvasManager.js"></script>
+  <script src="js/core/UIManager.js"></script>
+  <script src="js/core/GameStateManager.js"></script>
   <script src="js/core/gameFramework.js"></script>
-
+  
+  <!-- Load the module index to provide initialization helpers -->
+  <script src="js/core/index.js"></script>
+  
   <!-- Wait for framework to load before loading game classes -->
   <script>
     // Make sure GameFramework is defined
@@ -410,6 +403,9 @@
       console.log('GameFramework loaded successfully.');
     }
   </script>
+  
+  <!-- Load the Abstract Base Game first -->
+  <script src="games/AbstractBaseGame.js"></script>
   
   <!-- Base game must be loaded before game implementations -->
   <script src="games/baseGame.js"></script>
@@ -439,6 +435,12 @@
   <script src="js/utils/searchManager.js"></script>
   <script src="js/utils/responsiveLayout.js"></script>
   
+  <!-- Layout repair utility - fixes issues after tests -->
+  <script src="js/repairLayout.js"></script>
+  
+  <!-- Modern Test Framework with isolation -->
+  <script src="js/testFramework.js"></script>
+  
   <script>
     // Initialize immediately to ensure gameLoader is available
     console.log("Initializing game loader");
@@ -462,6 +464,7 @@
       // Log all available game classes
       console.log("Available game classes:", {
         GameFramework: typeof GameFramework !== 'undefined',
+        AbstractBaseGame: typeof AbstractBaseGame !== 'undefined',
         BaseGame: typeof BaseGame !== 'undefined',
         DiceGame: typeof DiceGame !== 'undefined',
         CardGame: typeof CardGame !== 'undefined'

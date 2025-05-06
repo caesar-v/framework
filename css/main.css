@@ -24,6 +24,8 @@
 @import 'components/popups.css';
 @import 'components/auth.css';
 @import 'components/game.css';
+@import 'components/test-panel.css'; /* Add test panel styles */
+@import 'components/test-framework.css'; /* New modular test framework */
 
 /* Themes - Default theme is loaded by default */
 @import 'themes/default.css';
