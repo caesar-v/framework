@@ -1564,44 +1564,107 @@
     transform: scale(1.05);
   }
   
-  /* Chat panel */
+  /* Chat panel - Full height panel that slides in from the right */
   .chat-panel {
-    grid-area: chat; /* Always place in chat area of grid */
-    width: 0; /* Start with zero width */
-    height: 100%; /* Full height */
-    background-color: var(--color-background); /* Match framework background */
-    border-left: 1px solid var(--color-border); /* Match framework border */
-    border-radius: var(--radius-lg);
+    position: fixed;
+    top: 0;
+    right: -400px; /* Start off-screen */
+    width: 400px; /* Fixed width */
+    height: 100vh; /* Full viewport height */
+    background-color: var(--color-background);
+    border-left: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
     box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease-in-out;
-    overflow: hidden; /* Hide content when collapsed */
-    opacity: 0;
-    margin: 0; /* No margin */
+    transition: transform 0.3s ease-in-out;
+    overflow: hidden;
+    z-index: 100;
   }
   
   .chat-panel.active {
-    width: 100%; /* Take full width of grid cell */
-    max-width: 400px; /* Limit maximum width */
-    opacity: 1;
-    height: 100%; /* Full height of parent */
+    transform: translateX(-400px); /* Slide in from the right */
   }
   
-  /* When game content has chat-open class, adjust grid template */
-  .game-content.chat-open {
-    grid-template-columns: 300px 1fr 400px !important;
+  /* When chat is open, modify only the grid layout to keep betting zone fixed */
+  .outer-container.chat-open .game-content {
+    grid-template-columns: 300px minmax(0, 1fr); /* Keep left column fixed, right column adapts */
   }
   
-  /* When game content doesn't have chat-open class */
-  .game-content:not(.chat-open) {
-    grid-template-columns: 300px 1fr 0fr !important;
+  /* When chat is open, modify the playground to prevent overlap */
+  .outer-container.chat-open .playground-zone {
+    width: calc(100% - 400px); /* Reduce width to prevent chat overlap */
+    transition: width 0.3s ease-in-out;
   }
   
-  /* Apply specific styles when in grid layout */
-  .pc .game-content.chat-open .chat-panel.active {
-    width: 100%; /* Take full width of the grid cell */
-    max-width: none; /* Remove max-width so it fills the grid area */
+  /* Also ensure canvas resizes properly */
+  .outer-container.chat-open canvas {
+    width: 100% !important; /* Force canvas to resize */
+    height: 100% !important;
+  }
+  
+  /* Default state for playground */
+  .outer-container .playground-zone {
+    width: 100%;
+    transition: width 0.3s ease-in-out;
+  }
+  
+  /* Make header adapt to chat panel */
+  .outer-container.chat-open .header {
+    padding-right: 400px; /* Add padding to prevent content from going under chat */
+    transition: padding-right 0.3s ease-in-out;
+  }
+  
+  /* Default header state */
+  .outer-container .header {
+    padding-right: var(--spacing-md);
+    transition: padding-right 0.3s ease-in-out;
+  }
+  
+  /* Make footer adapt to chat panel */
+  .outer-container.chat-open .footer {
+    padding-right: 400px; /* Add padding to prevent content from going under chat */
+    transition: padding-right 0.3s ease-in-out;
+  }
+  
+  /* Default footer state */
+  .outer-container .footer {
+    padding-right: var(--spacing-md);
+    transition: padding-right 0.3s ease-in-out;
+  }
+  
+  /* For mobile screens, make chat panel full width */
+  @media (max-width: 768px) {
+    .chat-panel {
+      width: 100%;
+      right: -100%;
+    }
+    
+    .chat-panel.active {
+      transform: translateX(-100%);
+    }
+    
+    /* On mobile, revert to simpler layout when chat is open */
+    /* Reset the padding/margin adjustments applied for desktop */
+    .outer-container.chat-open .header,
+    .outer-container.chat-open .footer {
+      padding-right: var(--spacing-md);
+    }
+    
+    /* Hide the playground completely on mobile when chat is open */
+    .outer-container.chat-open .playground-zone {
+      display: none;
+    }
+    
+    /* Adjust grid to stack elements vertically */
+    .outer-container.chat-open .game-content {
+      grid-template-columns: 1fr; /* Full width single column */
+      grid-template-areas: "betting";
+    }
+    
+    /* Apply slide animation for mobile user-only elements */
+    .user-only-element.chat-panel.active {
+      transform: translateX(-100%) !important; /* Full width slide in */
+    }
   }
   
   .chat-header {
@@ -1662,7 +1725,7 @@
     height: 100%; /* Full height */
     border: none;
     background-color: var(--color-panel); /* Match framework panel color */
-    display: block; /* Use block display */
+    display: block; /* Ensure proper display */
     box-sizing: border-box; /* Include padding in width calculation */
     border-bottom-left-radius: var(--radius-lg);
     border-bottom-right-radius: var(--radius-lg);
@@ -1670,21 +1733,22 @@
     overflow: hidden; /* Prevent scrollbars */
   }
   
-  /* Configure game content as a three-column layout when chat is open */
+  /* Configure game content layout with the betting zone staying fixed */
   
-  /* PC layout with three columns */
+  /* PC layout */
   .pc .game-content {
     position: relative;
     display: grid;
-    grid-template-columns: 300px 1fr 0fr;
-    grid-template-areas: "betting playground chat";
+    grid-template-columns: 300px 1fr;
+    grid-template-areas: "betting playground";
     gap: var(--spacing-md);
     height: 100%;
   }
   
+  /* When chat is open, betting zone stays fixed, only playground adjusts */
   .pc .game-content.chat-open {
-    grid-template-columns: 300px 1fr 400px;
-    grid-template-areas: "betting playground chat";
+    grid-template-columns: 300px 1fr;
+    grid-template-areas: "betting playground";
     padding-right: 0;
   }
   

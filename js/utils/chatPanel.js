@@ -30,19 +30,19 @@ class ChatPanelManager {
       headerChat: document.querySelector(this.config.headerChatSelector),
       close: document.querySelector(this.config.closeSelector),
       playground: document.querySelector(this.config.playgroundSelector),
-      gameContent: document.querySelector('.game-content'),
+      gameContainer: document.querySelector('.game-container'),
+      outerContainer: document.querySelector('.outer-container'),
       iframe: document.querySelector(this.config.iframeSelector)
     };
     
     // Initialize if all required elements are found
-    if (this.elements.panel && this.elements.playground && this.elements.headerChat && this.elements.gameContent) {
+    if (this.elements.panel && this.elements.headerChat && this.elements.outerContainer) {
       this.init();
     } else {
       console.error('Chat panel could not be initialized. Missing elements:', 
         !this.elements.panel ? 'panel' : '',
-        !this.elements.playground ? 'playground' : '',
         !this.elements.headerChat ? 'header chat button' : '',
-        !this.elements.gameContent ? 'game content' : '');
+        !this.elements.outerContainer ? 'outer container' : '');
     }
   }
   
@@ -176,61 +176,56 @@ class ChatPanelManager {
       return; // Don't open chat if user is not logged in
     }
     
-    // First add chat-open class to game-content to ensure proper layout
-    if (this.elements.gameContent) {
-      this.elements.gameContent.classList.add(this.config.chatOpenClass);
-      // CSS will handle the grid template columns
-    }
-    
-    // Small delay to allow the grid to set up before animating the panel
-    setTimeout(() => {
-      if (this.elements.panel) {
+    // Make the panel visible
+    if (this.elements.panel) {
+      this.elements.panel.style.display = 'flex';
+      this.elements.panel.style.opacity = '1';
+      
+      // Activate the chat panel with a small delay for better transition
+      setTimeout(() => {
+        // Add the active class to the panel to slide it in
         this.elements.panel.classList.add(this.config.activePanelClass);
-        // CSS controls width and opacity via the active class
-        this.elements.panel.style.removeProperty('opacity');
-      }
-    }, 50);
-    
-    // Add class to playground (redundant but keeping for backward compatibility)
-    if (this.elements.playground) {
-      this.elements.playground.classList.add(this.config.chatOpenClass);
+        
+        // Add chat-open class to shift the game container
+        const outerContainer = document.querySelector('.outer-container');
+        if (outerContainer) {
+          outerContainer.classList.add(this.config.chatOpenClass);
+        }
+      }, 50);
     }
     
-    // Update button states
+    // Update header button state
     if (this.elements.headerChat) {
       this.elements.headerChat.classList.add(this.config.activeButtonClass);
     }
     
     this.isChatOpen = true;
     
-    // Always refresh the iframe when opening the chat to ensure it's properly sized
-    if (this.elements.iframe) {
-      // If it's the first time, load the URL
-      if (this.elements.iframe.src === 'about:blank') {
-        const encodedUrl = this.parseWatchersUrl(this.config.watchersUrl);
-        this.elements.iframe.src = encodedUrl;
-      } else {
-        try {
-          // Try to reload but handle potential cross-origin issues
-          this.elements.iframe.contentWindow.location.reload();
-        } catch (e) {
-          console.log('Could not reload iframe: ', e);
-        }
-      }
+    // Load the iframe if needed
+    if (this.elements.iframe && this.elements.iframe.src === 'about:blank') {
+      const encodedUrl = this.parseWatchersUrl(this.config.watchersUrl);
+      this.elements.iframe.src = encodedUrl;
     }
     
     // Trigger window resize to update canvas sizing
-    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
   }
   
   /**
    * Close the chat panel
    */
   closeChat() {
-    // First collapse the panel without changing layout
+    // First remove the active class from the chat panel
     if (this.elements.panel) {
       this.elements.panel.classList.remove(this.config.activePanelClass);
-      // CSS will handle panel appearance via classes
+    }
+    
+    // Then remove chat-open class from the outer container
+    const outerContainer = document.querySelector('.outer-container');
+    if (outerContainer) {
+      outerContainer.classList.remove(this.config.chatOpenClass);
     }
     
     // Update button states
@@ -240,16 +235,14 @@ class ChatPanelManager {
     
     this.isChatOpen = false;
     
-    // Small delay before changing layout to ensure smooth transition
+    // After animation completes, hide panel if user not logged in
     setTimeout(() => {
-      if (this.elements.playground) {
-        this.elements.playground.classList.remove(this.config.chatOpenClass);
-      }
-      
-      // Remove the chat-open class from the game-content
-      if (this.elements.gameContent) {
-        this.elements.gameContent.classList.remove(this.config.chatOpenClass);
-        // CSS will handle the grid template change
+      if (this.elements.panel) {
+        if (!window.authManager || !window.authManager.isUserLoggedIn()) {
+          this.elements.panel.style.display = 'none';
+        } else {
+          this.elements.panel.style.opacity = '0';
+        }
       }
       
       // Trigger window resize to update canvas sizing

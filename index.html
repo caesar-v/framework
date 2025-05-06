@@ -100,9 +100,9 @@
       </header>
       
       <div class="game-content" 
-           style="grid-template-areas: 'betting playground chat'; grid-template-columns: 300px 1fr 400px;"
-           data-md-style="grid-template-areas: 'betting playground' 'betting chat'; grid-template-columns: 300px 1fr;"
-           data-base-style="grid-template-areas: 'playground' 'betting' 'chat'; grid-template-columns: 1fr;">
+           style="grid-template-areas: 'betting playground'; grid-template-columns: 300px 1fr;"
+           data-md-style="grid-template-areas: 'betting playground'; grid-template-columns: 300px 1fr;"
+           data-base-style="grid-template-areas: 'playground' 'betting'; grid-template-columns: 1fr;">
         <!-- Three main zones: playground (game canvas), betting zone, and chat panel -->
         <!-- 
           Responsive layouts applied with JavaScript:
@@ -176,21 +176,6 @@
           <canvas id="game-canvas"></canvas>
         </div>
         
-        <!-- Chat Panel - Sliding panel for watchers.io chat - Only visible for logged in users -->
-        <div id="chat-panel" class="chat-panel user-only-element" style="grid-area: chat;">
-          <div class="chat-header">
-            <h3>Live Chat</h3>
-            <button id="close-chat" class="close-chat">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div class="chat-content">
-            <!-- Watchers.io iframe will be inserted here -->
-            <iframe id="watchers-chat" src="about:blank" frameborder="0"></iframe>
-          </div>
-        </div>
       </div>
       
       <footer class="footer">
@@ -198,6 +183,23 @@
         <div id="current-time">00:00:00</div>
         <div id="footer-game-title">Dice Game</div>
       </footer>
+      
+    </div>
+    
+    <!-- Chat Panel - Sliding panel for watchers.io chat - Only visible for logged in users -->
+    <div id="chat-panel" class="chat-panel user-only-element">
+      <div class="chat-header">
+        <h3>Live Chat</h3>
+        <button id="close-chat" class="close-chat">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="chat-content">
+        <!-- Watchers.io iframe will be inserted here -->
+        <iframe id="watchers-chat" src="about:blank" frameborder="0"></iframe>
+      </div>
     </div>
     
     <!-- Settings Panel -->

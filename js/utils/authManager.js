@@ -213,7 +213,7 @@ class AuthManager {
       .user-only-element.chat-panel {
         display: flex !important; 
         flex-direction: column !important;
-        width: 0 !important; /* Start with zero width but visible */
+        width: 0 !important; /* Start with zero width */
         opacity: 0 !important; /* Start hidden but in the flow */
       }
       .user-only-element.chat-panel.active {
