@@ -1,0 +1,178 @@
+/* Settings Component: Styles for the settings panel */
+
+/* Settings Panel */
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: -350px; /* Start offscreen */
+  width: 350px;
+  height: 100vh;
+  background-color: var(--color-background);
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  transition: right 0.3s ease-in-out;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-panel.active {
+  right: 0;
+}
+
+.settings-header {
+  padding: var(--spacing-md);
+  background-color: var(--color-background-secondary);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.settings-title {
+  font-family: var(--font-display);
+  font-size: var(--font-xl);
+  font-weight: bold;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.settings-close {
+  background-color: transparent;
+  color: var(--color-foreground);
+  border: none;
+  font-size: var(--font-xl);
+  font-weight: bold;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-content {
+  padding: var(--spacing-md);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  font-family: var(--font-display);
+  font-size: var(--font-lg);
+  color: var(--color-accent);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Update the layout toggle and controls for better appearance in settings panel */
+.settings-panel .layout-toggle {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.settings-panel .debug-controls,
+.settings-panel .test-controls {
+  margin-bottom: 15px;
+}
+
+.settings-panel .debug-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-panel .toggle-switch-wrapper {
+  margin: 5px 0;
+}
+
+.settings-panel .btn {
+  width: 100%;
+  margin-top: 5px;
+}
+
+/* Settings sections */
+.layout-controls,
+.theme-controls,
+.game-selector-controls,
+.screen-info {
+  margin-bottom: 15px;
+}
+
+/* Screen information in settings panel */
+.screen-info {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background-color: var(--color-input);
+  border-radius: var(--radius-sm);
+  margin-bottom: 15px;
+  border: 1px solid var(--color-border);
+}
+
+.info-display {
+  font-family: var(--font-primary);
+  font-size: var(--font-base);
+  color: var(--color-accent);
+  padding: 6px 0;
+  font-weight: bold;
+}
+
+/* Layout toggle */
+.layout-toggle {
+  display: flex;
+  background-color: #eee;
+  border-radius: var(--radius-full);
+  padding: 2px;
+  width: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.layout-toggle input[type="radio"] {
+  display: none;
+}
+
+.layout-toggle label {
+  flex: 1;
+  text-align: center;
+  padding: 6px 10px;
+  cursor: pointer;
+  z-index: 1;
+  font-weight: bold;
+  font-size: var(--font-sm);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.layout-toggle .toggle-indicator {
+  position: absolute;
+  height: calc(100% - 4px);
+  width: calc(50% - 4px);
+  top: 2px;
+  left: 2px;
+  background-color: #fff;
+  border-radius: calc(var(--radius-full) - 2px);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-normal) var(--ease-in-out);
+}
+
+.layout-toggle input[type="radio"]:checked + label {
+  color: #333;
+}
+
+#mobile:checked ~ .toggle-indicator {
+  transform: translateX(100%);
+}

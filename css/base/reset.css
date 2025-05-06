@@ -1,0 +1,35 @@
+/* CSS Reset: Basic style resets and normalization */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--font-base);
+  line-height: 1.5;
+  background-color: #f0f0f0;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+/* PC has hidden overflow to prevent scrolling */
+.pc body {
+  overflow: hidden;
+}
+
+/* Mobile allows scrolling */
+.mobile body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}

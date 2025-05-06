@@ -1,0 +1,25 @@
+/* CSS Animations: Animation keyframes and transition classes */
+
+/* Pulse animation for the spin button */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 157, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 157, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 157, 0, 0);
+  }
+}
+
+/* Fade animation for game container transitions */
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.fade-in {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}

@@ -1,0 +1,30 @@
+/* Footer Component: Styles for the game footer */
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: var(--color-background-secondary);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-foreground-secondary);
+  font-size: var(--font-xs);
+}
+
+#footer-game-title {
+  font-weight: bold;
+  color: var(--color-accent);
+}
+
+/* Make footer adapt to chat panel */
+.outer-container.chat-open .footer {
+  padding-right: 400px; /* Add padding to prevent content from going under chat */
+  transition: padding-right 0.3s ease-in-out;
+}
+
+/* Default footer state */
+.outer-container .footer {
+  padding-right: var(--spacing-md);
+  transition: padding-right 0.3s ease-in-out;
+}

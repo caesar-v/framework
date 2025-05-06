@@ -1,0 +1,261 @@
+/* Betting Component: Styles for the betting area */
+
+/* Betting zone - contains all betting and control elements */
+.betting-zone {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(7, 29, 42, 0.9);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+}
+
+/* PC Layout specific styles */
+.pc .betting-zone {
+  width: 300px;
+  order: 1; /* Betting zone on the left */
+  margin: var(--spacing-md);
+  margin-right: 0;
+  /* Height adjusts to content but doesn't exceed container */
+  height: auto;
+  max-height: calc(100% - var(--spacing-md) * 2);
+}
+
+/* Control panels */
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-panel);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.control-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.control-panel-title {
+  font-size: var(--font-sm);
+  color: var(--color-foreground-secondary);
+  font-weight: bold;
+}
+
+/* Bet input group */
+.bet-input-group {
+  display: flex;
+  align-items: stretch; /* Important: Stretch items to the same height */
+  gap: var(--spacing-sm);
+  justify-content: center;
+  height: 44px; /* Fixed height for all elements */
+}
+
+.bet-controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.bet-input {
+  font-family: var(--font-primary);
+  font-size: var(--font-lg);
+  font-weight: bold;
+  color: var(--color-foreground);
+  background-color: var(--color-input);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  width: 80px;
+  text-align: center;
+  height: 100%; /* Full height */
+}
+
+/* Quick bet buttons */
+.quick-bets {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  flex-wrap: nowrap;
+  justify-content: space-between; /* Evenly distribute */
+}
+
+.quick-bet {
+  background-color: var(--color-background-secondary);
+  color: var(--color-foreground);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+  flex: 1; /* Make them all equal width */
+  text-align: center;
+  min-width: 50px;
+}
+
+/* Style for the ×2 bet button to stand out */
+#double-bet {
+  background-color: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+#double-bet:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.quick-bet:hover {
+  background-color: var(--color-primary);
+}
+
+/* Risk panel */
+.risk-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-panel);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.risk-panel-title {
+  font-size: var(--font-sm);
+  color: var(--color-foreground-secondary);
+  font-weight: bold;
+  margin-bottom: var(--spacing-xs);
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: '▼';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 12px;
+  color: var(--color-foreground-secondary);
+}
+
+.select-dropdown {
+  width: 100%;
+  padding: 10px;
+  font-family: var(--font-primary);
+  font-size: var(--font-sm);
+  color: var(--color-foreground);
+  background-color: var(--color-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  appearance: none;
+  height: 44px; /* Match other controls */
+}
+
+/* Play area */
+.play-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex-grow: 1; /* Allow it to grow to fill available space */
+  justify-content: space-between; /* Space elements evenly */
+}
+
+.spin-btn {
+  height: 60px;
+  font-size: var(--font-xl);
+  background-color: var(--color-accent);
+  color: #000;
+  font-weight: bold;
+  animation: pulse 1.5s infinite;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+}
+
+.profit-panel {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  background-color: var(--color-panel);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+}
+
+.profit-label {
+  font-size: var(--font-sm);
+  color: var(--color-foreground-secondary);
+  font-weight: bold;
+  margin-bottom: var(--spacing-xs);
+}
+
+.profit-value-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gold-coin-icon.small {
+  width: 20px;
+  height: 20px;
+}
+
+.profit-value {
+  font-size: var(--font-xl);
+  font-weight: bold;
+  color: var(--color-foreground);
+}
+
+.play-mode-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-md);
+}
+
+.play-mode-tabs {
+  display: flex;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background-secondary);
+  height: 44px;
+}
+
+.play-mode-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background-color: transparent;
+  color: var(--color-foreground-secondary);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.play-mode-tab.active {
+  background-color: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+/* Add spacing between elements in betting zone */
+.betting-zone > * {
+  margin-bottom: var(--spacing-md);
+}
+
+.betting-zone > *:last-child {
+  margin-bottom: 0;
+}

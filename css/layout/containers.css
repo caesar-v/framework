@@ -1,0 +1,48 @@
+/* Layout Containers: Primary layout containers for the application */
+
+/* Outer container for all content */
+.outer-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+}
+
+/* PC has fixed height container */
+.pc .outer-container {
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Mobile has auto height container to allow scrolling */
+.mobile .outer-container {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Game container - main responsive element */
+.game-container {
+  position: relative;
+  margin: 0 auto;
+  background-color: var(--color-background);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--ease-in-out);
+  display: flex;
+  flex-direction: column;
+}
+
+/* PC layout */
+.game-container.pc {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Mobile layout */
+.game-container.mobile {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  max-height: 100%;
+}

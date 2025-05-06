@@ -1,0 +1,52 @@
+/* Grid Layout: Grid system for game layouts */
+
+/* Main game content area - where canvas and controls display */
+.game-content {
+  flex: 1;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+  gap: var(--spacing-md);
+  height: 100%;
+}
+
+/* PC layout */
+.pc .game-content {
+  position: relative;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-areas: "betting playground";
+  gap: var(--spacing-md);
+  height: 100%;
+}
+
+/* When chat is open, betting zone stays fixed, only playground adjusts */
+.pc .game-content.chat-open {
+  grid-template-columns: 300px 1fr;
+  grid-template-areas: "betting playground";
+  padding-right: 0;
+}
+
+/* Mobile Layout (9:16) - Playground on top, betting zone at bottom */
+.mobile .game-content {
+  flex-direction: column;
+  min-height: unset; /* Allow content to determine height */
+  overflow: visible; /* Allow content to flow outside */
+}
+
+.mobile .playground-zone {
+  order: 1; /* Playground on top */
+  flex: 0 0 auto; /* Don't allow flex grow/shrink */
+  margin-bottom: 0;
+  height: 70vh; /* Set height to about 70% of viewport height */
+  min-height: 300px; /* Enforce a minimum height */
+}
+
+.mobile .betting-zone {
+  order: 2; /* Betting zone at bottom */
+  margin: var(--spacing-md);
+  margin-top: 0;
+  width: auto;
+  max-height: none;
+  flex: 0 0 auto; /* Don't allow flex grow/shrink */
+}

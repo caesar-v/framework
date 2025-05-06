@@ -1,0 +1,183 @@
+/* Chat Component: Styles for the chat panel */
+
+/* User-only elements - Initially hidden until user is logged in */
+.user-only-element {
+  display: none; /* JS will override this when user is logged in */
+}
+
+/* Special case for chat panel to ensure it works with grid layout */
+.chat-panel.user-only-element.active {
+  opacity: 1;
+  max-width: 400px;
+}
+
+/* Chat toggle button */
+.chat-toggle {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-foreground);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.chat-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.chat-toggle:hover {
+  background-color: var(--color-primary-hover);
+  transform: scale(1.05);
+}
+
+/* Chat panel - Full height panel that slides in from the right */
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: -400px; /* Start off-screen */
+  width: 400px; /* Fixed width */
+  height: 100vh; /* Full viewport height */
+  background-color: var(--color-background);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.chat-panel.active {
+  transform: translateX(-400px); /* Slide in from the right */
+}
+
+/* When chat is open, only modify the playground to prevent overlap */
+.outer-container.chat-open .playground-zone {
+  width: calc(100% - 400px); /* Reduce width to prevent chat overlap */
+  transition: width 0.3s ease-in-out;
+}
+
+/* Also ensure canvas resizes properly */
+.outer-container.chat-open canvas {
+  width: 100% !important; /* Force canvas to resize */
+  height: 100% !important;
+}
+
+/* Default state for playground */
+.outer-container .playground-zone {
+  width: 100%;
+  transition: width 0.3s ease-in-out;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--color-background-secondary); /* Match framework header */
+  border-bottom: 1px solid var(--color-border); /* Match framework borders */
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-lg);
+  color: var(--color-accent); /* Match game title color */
+  font-weight: 600;
+}
+
+.close-chat {
+  background: transparent;
+  border: none;
+  color: var(--color-foreground-secondary); /* Match framework secondary text */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  transition: color 0.2s ease;
+}
+
+.close-chat svg {
+  width: 20px;
+  height: 20px;
+}
+
+.close-chat:hover {
+  color: var(--color-danger); /* Match framework danger color */
+}
+
+.chat-content {
+  flex: 1; /* Take all available space */
+  overflow: hidden;
+  position: relative;
+  height: calc(100% - 50px); /* Full height minus header height */
+  padding: 0; /* No padding */
+  margin: 0; /* No margin */
+  width: 100%; /* Full width */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+#watchers-chat {
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  border: none;
+  background-color: var(--color-panel); /* Match framework panel color */
+  display: block; /* Ensure proper display */
+  box-sizing: border-box; /* Include padding in width calculation */
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  object-fit: fill; /* Fill the entire container */
+  overflow: hidden; /* Prevent scrollbars */
+}
+
+/* For mobile screens, make chat panel full width */
+@media (max-width: 768px) {
+  .chat-panel {
+    width: 100%;
+    right: -100%;
+  }
+  
+  .chat-panel.active {
+    transform: translateX(-100%);
+  }
+  
+  /* On mobile, revert to simpler layout when chat is open */
+  /* Reset the padding/margin adjustments applied for desktop */
+  .outer-container.chat-open .header,
+  .outer-container.chat-open .footer {
+    padding-right: var(--spacing-md);
+  }
+  
+  /* Hide the playground completely on mobile when chat is open */
+  .outer-container.chat-open .playground-zone {
+    display: none;
+  }
+  
+  /* Adjust grid to stack elements vertically */
+  .outer-container.chat-open .game-content {
+    grid-template-columns: 1fr; /* Full width single column */
+    grid-template-areas: "betting";
+  }
+  
+  /* Apply slide animation for mobile user-only elements */
+  .user-only-element.chat-panel.active {
+    transform: translateX(-100%) !important; /* Full width slide in */
+  }
+}

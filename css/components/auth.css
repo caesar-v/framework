@@ -1,0 +1,89 @@
+/* Auth Component: Styles for authentication elements */
+
+/* Auth controls */
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.auth-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--font-sm);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-button {
+  background-color: transparent;
+  color: var(--color-foreground);
+  border-color: var(--color-accent-gold);
+}
+
+.login-button:hover {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.signup-button {
+  background-color: var(--color-accent-gold);
+  color: var(--color-background);
+  border-color: var(--color-accent-gold);
+}
+
+.signup-button:hover {
+  background-color: rgba(255, 215, 0, 0.8);
+}
+
+.logout-button {
+  background-color: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.logout-button:hover {
+  background-color: rgba(233, 17, 60, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-panel);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-foreground);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-size: var(--font-sm);
+  font-weight: bold;
+  color: var(--color-foreground);
+}

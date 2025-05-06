@@ -1,0 +1,214 @@
+/* Responsive Styles: Media queries for responsive layouts */
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .top-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .theme-controls, .layout-controls {
+    width: 100%;
+  }
+  
+  .game-container.pc {
+    width: 100%;
+    height: auto;
+  }
+  
+  .game-container.mobile {
+    height: calc(100vh - 120px);
+    width: auto;
+  }
+}
+
+/* Adjust PC layout for smaller screens */
+@media (max-width: 900px) {
+  /* Switch PC layout to be more like mobile on smaller screens */
+  .pc .game-content {
+    flex-direction: column;
+  }
+  
+  /* Override grid layout for smaller screens */
+  .pc .game-content.chat-open {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pc .playground-zone {
+    order: 1;
+    height: 60vh;
+    margin-bottom: 0;
+  }
+  
+  .pc .betting-zone {
+    order: 2;
+    width: auto;
+    margin: var(--spacing-md);
+    margin-top: 0;
+  }
+  
+  .pc .chat-panel {
+    order: 3;
+    width: auto;
+    margin: var(--spacing-md);
+    margin-top: 0;
+    max-height: 300px; /* Limit height on smaller screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .header-left {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .search-bar {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .auth-controls {
+    order: 3; /* Position auth controls below balance */
+    margin-top: var(--spacing-sm);
+  }
+  
+  .auth-buttons {
+    width: 100%;
+  }
+  
+  .auth-button {
+    flex: 1; /* Make buttons take equal width */
+  }
+  
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 10px 16px;
+  }
+  
+  .popup {
+    width: 95%;
+  }
+  
+  /* Make betting zone more compact on mobile */
+  .betting-zone {
+    padding: var(--spacing-sm);
+  }
+  
+  /* Make controls more compact */
+  .control-panel, .risk-panel, .play-controls {
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+  
+  /* Adjust playground height for small devices */
+  .mobile .playground-zone {
+    height: 50vh;
+  }
+}
+
+/* Adjust betting zone spacing for smaller screens */
+@media (max-height: 760px) {
+  .mobile .playground-zone {
+    height: 50vh; /* Smaller playground for very small screens */
+  }
+}
+
+/* Very small devices */
+@media (max-width: 480px) {
+  .mobile .playground-zone {
+    height: 45vh;
+  }
+  
+  .betting-zone {
+    padding: var(--spacing-xs);
+  }
+  
+  .control-panel, .risk-panel, .play-controls {
+    padding: var(--spacing-xs);
+  }
+  
+  .bet-input-group {
+    gap: 5px;
+  }
+  
+  .quick-bets {
+    gap: 5px;
+  }
+  
+  /* Simplify header on very small screens */
+  .header-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-left {
+    gap: var(--spacing-xs);
+  }
+  
+  .portal-title {
+    font-size: var(--font-xl);
+  }
+  
+  .search-bar {
+    height: 32px;
+  }
+  
+  .search-input {
+    font-size: var(--font-xs);
+  }
+  
+  .auth-controls {
+    width: 100%;
+  }
+  
+  .auth-buttons {
+    width: 100%;
+  }
+  
+  .auth-button {
+    font-size: var(--font-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+  
+  .user-info {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+  }
+}
+
+/* For mobile layout */
+@media (max-width: 768px) {
+  .top-controls {
+    flex-wrap: wrap;
+  }
+  
+  .game-selector-controls {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
