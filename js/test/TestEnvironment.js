@@ -47,8 +47,23 @@ class TestEnvironment {
     this.originalState = {
       bodyClasses: [...document.body.classList],
       cssVariables: {},
-      overlayState: {}
+      overlayState: {},
+      gameLoader: {
+        activeGame: window.gameLoader ? window.gameLoader.activeGame : null,
+        activeGameType: null
+      }
     };
+    
+    // Сохранить тип активной игры, если есть gameLoader
+    if (window.gameLoader && window.gameLoader.activeGame) {
+      // Найти тип активной игры
+      this.originalState.gameLoader.activeGameType = Object.keys(window.gameLoader.gameRegistry || {}).find(
+        key => window.gameLoader.gameInstances && 
+              window.gameLoader.gameInstances[key] === window.gameLoader.activeGame
+      );
+      
+      console.log(`Captured active game state: ${this.originalState.gameLoader.activeGameType}`);
+    }
     
     // Сохранить текущие значения CSS-переменных
     const rootStyle = getComputedStyle(document.documentElement);
@@ -700,6 +715,35 @@ class TestEnvironment {
       }
     }
     
+    // Восстановить gameLoader и активную игру
+    if (window.gameLoader && this.originalState?.gameLoader) {
+      console.log('Restoring gameLoader state...');
+      
+      // Сначала сбросить все флаги загрузки
+      window.gameLoader._loadingGame = false;
+      window.gameLoader._loadingGameTest = false;
+      window.gameLoader._creatingGame = false;
+      window.gameLoader._loadingInProgress = null;
+      
+      // Проверить, нужно ли восстанавливать активную игру
+      if (!window.gameLoader.activeGame && this.originalState.gameLoader.activeGame) {
+        console.log('Restoring active game reference...');
+        window.gameLoader.activeGame = this.originalState.gameLoader.activeGame;
+        
+        // Если известен тип игры, попробовать переактивировать её
+        if (this.originalState.gameLoader.activeGameType) {
+          console.log(`Reactivating game type: ${this.originalState.gameLoader.activeGameType}`);
+          
+          // Использовать таймаут для безопасного переключения после завершения тестов
+          setTimeout(() => {
+            if (window.gameLoader && typeof window.gameLoader.forceActivateGame === 'function') {
+              window.gameLoader.forceActivateGame(this.originalState.gameLoader.activeGameType);
+            }
+          }, 200);
+        }
+      }
+    }
+    
     // Восстановить состояние оверлея меню
     const menuOverlay = document.getElementById('menu-overlay');
     if (menuOverlay && this.originalState?.overlayState) {
@@ -754,6 +798,38 @@ class TestEnvironment {
     // Очистить после тестов
     await this.cleanupAfterTest();
     
+    // Дополнительная проверка состояния gameLoader
+    // Это необходимо для гарантированного восстановления активной игры
+    if (window.gameLoader && this.originalState?.gameLoader?.activeGameType) {
+      console.log(`Final check: ensuring active game is restored (${this.originalState.gameLoader.activeGameType})`);
+      
+      // Проверить, восстановлена ли активная игра
+      if (!window.gameLoader.activeGame) {
+        console.log('Active game still missing, attempting final restoration');
+        
+        // Сбросить все флаги загрузки
+        window.gameLoader._loadingGame = false;
+        window.gameLoader._loadingGameTest = false;
+        window.gameLoader._creatingGame = false;
+        window.gameLoader._loadingInProgress = null;
+        
+        // Переключиться на сохраненный тип игры
+        try {
+          // Безопасно вызвать метод загрузки игры
+          if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+            window.gameLoader.forceCreateNewGame(this.originalState.gameLoader.activeGameType);
+          } else if (typeof window.gameLoader.loadGame === 'function') {
+            window.gameLoader.loadGame(this.originalState.gameLoader.activeGameType);
+          }
+          console.log('Final game restoration attempted');
+        } catch (e) {
+          console.error('Error during final game restoration:', e);
+        }
+      } else {
+        console.log('Active game reference exists, no final restoration needed');
+      }
+    }
+    
     // Удалить тестовый контейнер
     if (this.testContainer && this.testContainer.parentNode) {
       this.testContainer.remove();
@@ -777,6 +853,9 @@ class TestEnvironment {
       // Поэтому просто очищаем карту
     }
     this.eventListeners.clear();
+    
+    // Обновить UI - вызвать обработчик изменения размеров для корректного отображения
+    window.dispatchEvent(new Event('resize'));
     
     console.log('Test environment finalized');
   }
