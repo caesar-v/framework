@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Framework Tests</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .test-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .test-runner {
+      margin-top: 20px;
+      text-align: center;
+    }
+    button {
+      background-color: #6272a4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #7282b4;
+    }
+    #test-results {
+      margin-top: 20px;
+    }
+    .test-result {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .test-success {
+      background-color: #e6ffec;
+      border-left: 4px solid #2ecc71;
+    }
+    .test-failure {
+      background-color: #ffefef;
+      border-left: 4px solid #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Game Framework Tests</h1>
+    <div class="test-runner">
+      <button id="run-tests-button">Run All Tests</button>
+    </div>
+    <div id="test-results"></div>
+  </div>
+
+  <!-- Load utility modules first -->
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/animation.js"></script>
+  
+  <!-- Load core modules in order -->
+  <script src="js/core/CanvasManager.js"></script>
+  <script src="js/core/UIManager.js"></script>
+  <script src="js/core/GameStateManager.js"></script>
+  <script src="js/core/gameFramework.js"></script>
+  
+  <!-- Load the module index to provide initialization helpers -->
+  <script src="js/core/index.js"></script>
+  
+  <!-- Load the Abstract Base Game first -->
+  <script src="games/AbstractBaseGame.js"></script>
+  
+  <!-- Base game must be loaded before game implementations -->
+  <script src="games/baseGame.js"></script>
+  
+  <!-- Game loader - depends on all game classes -->
+  <script src="js/core/gameLoader.js"></script>
+  
+  <!-- Test Suite -->
+  <script src="js/testSuite.js"></script>
+
+  <!-- Mock DOM elements for tests -->
+  <div style="display: none;">
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <div class="game-container pc" id="game-container"></div>
+    <div class="playground-zone"></div>
+    <input type="text" id="bet-input" value="10">
+    <button id="spin-button">SPIN</button>
+    <button id="increase-bet">+</button>
+    <button id="decrease-bet">-</button>
+    <select id="theme-select"><option value="default">Default</option></select>
+    <div id="settings-panel"></div>
+    <button id="settings-button">Settings</button>
+    <button id="sound-button">Sound</button>
+    <button id="menu-button">Menu</button>
+    <div id="menu-overlay"></div>
+    <button id="close-menu">Close</button>
+    <button id="close-settings">Close</button>
+    <button id="manual-tab">Manual</button>
+    <button id="auto-tab">Auto</button>
+    <button id="half-bet">1/2</button>
+    <button id="double-bet">×2</button>
+    <button id="max-bet">Max</button>
+    <select id="risk-level"><option value="medium">Medium</option></select>
+    <span id="balance-display">1000.00</span>
+    <span id="potential-win">30.00</span>
+    <span id="current-time">00:00:00</span>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create individual test runner
+      const runIndividualTest = function(testFile) {
+        return new Promise((resolve) => {
+          console.log(`Running test: ${testFile}`);
+          const script = document.createElement('script');
+          script.src = testFile;
+          
+          const timeoutId = setTimeout(() => {
+            console.error(`Test ${testFile} timed out after 5 seconds`);
+            resolve({
+              name: testFile.split('/').pop().replace('.js', ''),
+              success: false,
+              message: 'Test timed out after 5 seconds'
+            });
+          }, 5000);
+          
+          script.onload = () => {
+            clearTimeout(timeoutId);
+            // Check for test status
+            const testName = testFile.split('/').pop().replace('.js', '');
+            // Check if we can find a success or failure message in console output
+            const success = !document.querySelector(`.test-error-${testName}`);
+            resolve({
+              name: testName,
+              success: success,
+              message: success ? 'Test passed successfully' : 'Test failed'
+            });
+          };
+          
+          script.onerror = () => {
+            clearTimeout(timeoutId);
+            resolve({
+              name: testFile.split('/').pop().replace('.js', ''),
+              success: false,
+              message: 'Failed to load test script'
+            });
+          };
+          
+          document.body.appendChild(script);
+        });
+      };
+      
+      // Run all tests
+      const runAllTests = async function() {
+        const testResults = document.getElementById('test-results');
+        testResults.innerHTML = '<p>Running tests...</p>';
+        
+        const tests = [
+          'js/moduleLoadTest.js',
+          'js/canvasTest.js',
+          'js/uiTest.js',
+          'js/inheritanceTest.js',
+          'js/gameStateTest.js'
+        ];
+        
+        const results = [];
+        
+        for (const test of tests) {
+          const result = await runIndividualTest(test);
+          results.push(result);
+        }
+        
+        // Display results
+        testResults.innerHTML = '';
+        results.forEach(result => {
+          const resultElement = document.createElement('div');
+          resultElement.className = `test-result ${result.success ? 'test-success' : 'test-failure'}`;
+          resultElement.innerHTML = `
+            <h3>${result.name}</h3>
+            <p>${result.message}</p>
+          `;
+          testResults.appendChild(resultElement);
+        });
+        
+        // Overall summary
+        const allPassed = results.every(r => r.success);
+        const summaryElement = document.createElement('div');
+        summaryElement.style.marginTop = '20px';
+        summaryElement.style.padding = '10px';
+        summaryElement.style.borderRadius = '4px';
+        summaryElement.style.backgroundColor = allPassed ? '#e6ffec' : '#ffefef';
+        summaryElement.style.textAlign = 'center';
+        summaryElement.style.fontWeight = 'bold';
+        summaryElement.textContent = allPassed 
+          ? 'All tests passed successfully!' 
+          : 'Some tests failed. Check the console for details.';
+        testResults.appendChild(summaryElement);
+      };
+      
+      // Set up button click handler
+      document.getElementById('run-tests-button').addEventListener('click', runAllTests);
+    });
+  </script>
+</body>
+</html>

@@ -138,6 +138,19 @@ class GameLoader {
       // Create a new instance of the game
       this.gameInstances[gameType] = new GameClass();
       
+      // Initialize the framework
+      const framework = new GameFramework({
+        gameTitle: this.gameRegistry[gameType].name
+      });
+      
+      // If the game has a setFramework method, use it to connect to the framework
+      if (typeof this.gameInstances[gameType].setFramework === 'function') {
+        this.gameInstances[gameType].setFramework(framework);
+      } else {
+        // Backwards compatibility - set game property
+        this.gameInstances[gameType].game = framework;
+      }
+      
       // Set as active game
       this.activeGame = this.gameInstances[gameType];
       
@@ -154,15 +167,25 @@ class GameLoader {
       
       console.log(`Successfully created and activated new ${gameType} game`);
       
+      // Get the framework reference (could be either .game or .framework)
+      const gameFramework = this.activeGame?.framework || this.activeGame?.game;
+      
       // Force a redraw of the game canvas
-      if (this.activeGame && this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
+      if (gameFramework) {
         setTimeout(() => {
           try {
-            this.activeGame.game.drawCanvas();
+            // Try the new redrawCanvas method first
+            if (typeof gameFramework.redrawCanvas === 'function') {
+              gameFramework.redrawCanvas();
+            } 
+            // Fall back to the old drawCanvas method
+            else if (typeof gameFramework.drawCanvas === 'function') {
+              gameFramework.drawCanvas();
+            }
             
             // Update game canvas info in settings panel
-            if (typeof this.activeGame.game.updateGameCanvasInfo === 'function') {
-              this.activeGame.game.updateGameCanvasInfo();
+            if (typeof gameFramework.updateGameCanvasInfo === 'function') {
+              gameFramework.updateGameCanvasInfo();
             }
           } catch (drawError) {
             console.error('Error during initial canvas draw:', drawError);
@@ -357,7 +380,21 @@ class GameLoader {
       
       // Create a try/catch block for game initialization
       try {
+        // Create a new game instance
         this.gameInstances[gameType] = new GameClass();
+        
+        // Initialize the framework
+        const framework = new GameFramework({
+          gameTitle: this.gameRegistry[gameType].name
+        });
+        
+        // If the game has a setFramework method, use it to connect to the framework
+        if (typeof this.gameInstances[gameType].setFramework === 'function') {
+          this.gameInstances[gameType].setFramework(framework);
+        } else {
+          // Backwards compatibility - set game property
+          this.gameInstances[gameType].game = framework;
+        }
         
         // Wait for a moment to allow game to fully initialize
         setTimeout(() => {
@@ -367,15 +404,15 @@ class GameLoader {
             this.gameSelector.value = gameType;
           }
           
-          // Check if game framework is ready
-          if (this.gameInstances[gameType].game) {
+          // Check if game framework is ready (could be either .game or .framework)
+          if (this.gameInstances[gameType].game || this.gameInstances[gameType].framework) {
             console.log(`${gameType} game framework initialized successfully`);
             this.activateGame(gameType);
           } else {
             console.warn(`${gameType} game framework not initialized yet, waiting...`);
             // Wait a bit more and check again
             setTimeout(() => {
-              if (this.gameInstances[gameType].game) {
+              if (this.gameInstances[gameType].game || this.gameInstances[gameType].framework) {
                 this.activateGame(gameType);
               } else {
                 console.error(`Failed to initialize ${gameType} game framework`);
@@ -410,7 +447,8 @@ class GameLoader {
     console.log(`Activating game: ${gameType}`);
     
     // Before we start, make sure the game instance is properly initialized
-    if (!this.gameInstances[gameType] || !this.gameInstances[gameType].game) {
+    if (!this.gameInstances[gameType] || 
+        (!this.gameInstances[gameType].game && !this.gameInstances[gameType].framework)) {
       console.error(`Cannot activate - game ${gameType} is not fully initialized`);
       return;
     }
@@ -452,13 +490,23 @@ class GameLoader {
       // Restore state
       this.restoreGameState(gameType);
       
+      // Get the framework reference (could be either .game or .framework)
+      const gameFramework = this.activeGame?.framework || this.activeGame?.game;
+      
       // Redraw the game canvas
-      if (this.activeGame.game && typeof this.activeGame.game.drawCanvas === 'function') {
-        this.activeGame.game.drawCanvas();
+      if (gameFramework) {
+        // Try the new redrawCanvas method first
+        if (typeof gameFramework.redrawCanvas === 'function') {
+          gameFramework.redrawCanvas();
+        } 
+        // Fall back to the old drawCanvas method
+        else if (typeof gameFramework.drawCanvas === 'function') {
+          gameFramework.drawCanvas();
+        }
         
-        // Update game canvas info in settings panel
-        if (typeof this.activeGame.game.updateGameCanvasInfo === 'function') {
-          this.activeGame.game.updateGameCanvasInfo();
+        // Update game canvas info in settings panel if available
+        if (typeof gameFramework.updateGameCanvasInfo === 'function') {
+          gameFramework.updateGameCanvasInfo();
         }
       }
       
@@ -480,12 +528,13 @@ class GameLoader {
       return;
     }
     
-    // Make sure the game instance has a game property
-    if (!this.gameInstances[gameType].game) {
+    // Make sure the game instance has a framework or game property
+    if (!this.gameInstances[gameType].framework && !this.gameInstances[gameType].game) {
       console.error(`Cannot activate ${gameType} - game framework not initialized`);
       // We'll give it a bit more time to initialize
       setTimeout(() => {
-        if (this.gameInstances[gameType] && this.gameInstances[gameType].game) {
+        if (this.gameInstances[gameType] && 
+            (this.gameInstances[gameType].framework || this.gameInstances[gameType].game)) {
           console.log(`Game ${gameType} initialized after delay, activating now`);
           this.activateGameWithEffects(gameType);
         } else {
@@ -564,11 +613,23 @@ class GameLoader {
    * Save game state to local storage
    */
   saveGameState(gameType) {
-    if (this.gameInstances[gameType] && this.gameInstances[gameType].game) {
+    const gameInstance = this.gameInstances[gameType];
+    if (!gameInstance) return;
+    
+    // Get framework reference (could be .framework or .game)
+    const gameFramework = gameInstance.framework || gameInstance.game;
+    
+    if (gameFramework) {
       try {
-        const gameState = this.gameInstances[gameType].game.state;
-        localStorage.setItem(`game_state_${gameType}`, JSON.stringify(gameState));
-        console.log(`Saved state for ${gameType}`);
+        // Check for state directly on framework or in modules.gameState
+        const gameState = gameFramework.state || 
+                         (gameFramework.modules && gameFramework.modules.gameState && 
+                          gameFramework.modules.gameState.state);
+        
+        if (gameState) {
+          localStorage.setItem(`game_state_${gameType}`, JSON.stringify(gameState));
+          console.log(`Saved state for ${gameType}`);
+        }
       } catch (error) {
         console.error(`Error saving game state:`, error);
       }
@@ -581,19 +642,46 @@ class GameLoader {
   restoreGameState(gameType) {
     try {
       const savedState = localStorage.getItem(`game_state_${gameType}`);
-      if (savedState && this.gameInstances[gameType] && this.gameInstances[gameType].game) {
+      const gameInstance = this.gameInstances[gameType];
+      
+      if (!savedState || !gameInstance) return;
+      
+      // Get framework reference (could be .framework or .game)
+      const gameFramework = gameInstance.framework || gameInstance.game;
+      
+      if (gameFramework) {
         const parsedState = JSON.parse(savedState);
         
-        // Merge saved state with default state
-        Object.assign(this.gameInstances[gameType].game.state, parsedState);
+        // Determine which state object to update
+        if (gameFramework.state) {
+          // Legacy framework - state directly on framework
+          Object.assign(gameFramework.state, parsedState);
+        } else if (gameFramework.modules && gameFramework.modules.gameState) {
+          // Modern framework - state in gameState module
+          const stateManager = gameFramework.modules.gameState;
+          if (stateManager.state) {
+            Object.assign(stateManager.state, parsedState);
+          }
+          
+          // Also try to update state through state manager
+          if (typeof stateManager.updateState === 'function') {
+            stateManager.updateState(parsedState);
+          }
+        }
 
-        // Update UI to reflect restored state
-        if (typeof this.gameInstances[gameType].game.updateBalance === 'function') {
-          this.gameInstances[gameType].game.updateBalance();
+        // Update UI to reflect restored state (try both legacy and modern methods)
+        if (typeof gameFramework.updateBalance === 'function') {
+          gameFramework.updateBalance();
+        } else if (gameFramework.modules && gameFramework.modules.ui && 
+                  typeof gameFramework.modules.ui.updateBalance === 'function') {
+          gameFramework.modules.ui.updateBalance();
         }
         
-        if (typeof this.gameInstances[gameType].game.updatePotentialWin === 'function') {
-          this.gameInstances[gameType].game.updatePotentialWin();
+        if (typeof gameFramework.updatePotentialWin === 'function') {
+          gameFramework.updatePotentialWin();
+        } else if (gameFramework.modules && gameFramework.modules.ui &&
+                  typeof gameFramework.modules.ui.updatePotentialWin === 'function') {
+          gameFramework.modules.ui.updatePotentialWin();
         }
         
         console.log(`Restored state for ${gameType}`);

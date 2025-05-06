@@ -39,58 +39,112 @@ This framework provides a modular structure for building game prototypes with a 
 <link rel="stylesheet" href="css/styles.css">
 <script src="js/utils/helpers.js"></script>
 <script src="js/utils/animation.js"></script>
+<script src="js/core/CanvasManager.js"></script>
+<script src="js/core/UIManager.js"></script>
+<script src="js/core/GameStateManager.js"></script>
 <script src="js/core/gameFramework.js"></script>
+<script src="js/core/index.js"></script>
+<script src="games/AbstractBaseGame.js"></script>
 <script src="games/baseGame.js"></script>
 <script src="games/yourGame.js"></script>
 <script src="js/core/gameLoader.js"></script>
 <script src="js/utils/debugManager.js"></script>
 ```
 
-2. Create a new game implementation:
+2. Create a new game implementation by extending BaseGame:
 
 ```javascript
-class YourGame {
+class YourGame extends BaseGame {
   constructor(config = {}) {
-    // Game-specific configuration and state
-    
-    // Initialize the framework with your custom game logic
-    this.game = new GameFramework({
+    // Set up your game-specific configuration
+    const gameConfig = {
       gameTitle: 'Your Game Title',
-      // Override any default configurations
-      gameLogic: {
-        spin: this.spin.bind(this),
-        calculateWin: this.calculateWin.bind(this),
-        renderGame: this.renderGame.bind(this),
-        handleWin: this.handleWin.bind(this),
-        handleLoss: this.handleLoss.bind(this)
-      }
-    });
+      initialBalance: 1000,
+      initialBet: 10,
+      maxBet: 500,
+      // Additional game-specific configuration
+      ...config
+    };
+    
+    // Call parent constructor with your config
+    super(gameConfig);
+    
+    // Set up game-specific state
+    this.gameState = {
+      // Your game state properties
+    };
+    
+    // Initialize your game objects
+    this.initGame();
   }
   
-  // Implement your game logic methods
+  // Initialize game-specific objects
+  initGame() {
+    // Create any game objects, initialize state, etc.
+  }
+  
+  // Implement required methods
+  
   spin(callback) {
     // Your spin logic here
     // Call callback with result when done
+    setTimeout(() => {
+      const result = {
+        isWin: Math.random() > 0.5,
+        // Other result data
+      };
+      callback(result);
+    }, 1000);
   }
   
   calculateWin(betAmount, riskLevel, result) {
     // Calculate win amount based on game rules
+    if (!result.isWin) return 0;
+    
+    const multiplier = this.getRiskMultiplier(riskLevel);
+    return betAmount * multiplier;
   }
   
   renderGame(ctx, width, height, state) {
     // Render your game on the canvas
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw game elements
+    ctx.fillStyle = '#FFF';
+    ctx.textAlign = 'center';
+    ctx.font = '24px Arial';
+    ctx.fillText('Your Game', width / 2, height / 2);
   }
   
   handleWin(ctx, width, height, winAmount, result) {
     // Handle win display/animation
+    ctx.fillStyle = 'gold';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 32px Arial';
+    ctx.fillText(`WIN: ${winAmount}`, width / 2, height / 3);
   }
   
   handleLoss(ctx, width, height, result) {
     // Handle loss display
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.font = '24px Arial';
+    ctx.fillText('Try Again', width / 2, height * 0.8);
+  }
+  
+  // Helper methods
+  getRiskMultiplier(riskLevel) {
+    const multipliers = {
+      'low': 1.5,
+      'medium': 3,
+      'high': 6
+    };
+    return multipliers[riskLevel] || multipliers.medium;
   }
 }
 
-// Initialize your game
+// Initialize your game (can be done through GameLoader)
 document.addEventListener('DOMContentLoaded', () => {
   const game = new YourGame();
 });
@@ -115,8 +169,6 @@ The `GameFramework` constructor accepts a configuration object with the followin
 | defaultTheme | string | Default selected theme |
 | canvasDimensions | object | Dimensions for PC and mobile layouts |
 | defaultLayout | string | Default layout ('pc' or 'mobile') |
-| usePixi | boolean | Whether to use PixiJS for rendering (if available) |
-| pixiOptions | object | Additional options for PixiJS renderer |
 | gameLogic | object | Custom game logic methods |
 
 ## Game Logic Interface
@@ -149,15 +201,12 @@ Renders the game on the canvas using the Canvas 2D API.
 - `height`: The canvas height
 - `state`: The current game state
 
-### renderGameWithPixi(pixiApp, container, width, height, state)
-Renders the game using PixiJS (optional, if PixiJS rendering is enabled).
+### renderGameWithPixi (Deprecated)
+This method has been deprecated in the core framework. PIXI has been removed from the core framework to simplify the codebase.
 
-**Parameters:**
-- `pixiApp`: The PIXI.Application instance
-- `container`: The PIXI.Container to add game elements to
-- `width`: The canvas width
-- `height`: The canvas height
-- `state`: The current game state
+If you need PIXI rendering in your specific game, you can:
+1. Import PIXI directly in your game implementation
+2. Implement your own PIXI rendering logic within your game class
 
 ### handleWin(ctx, width, height, winAmount, result)
 Handles displaying win animations or messages.
@@ -178,86 +227,55 @@ Handles displaying loss animations or messages.
 - `height`: The canvas height
 - `result`: The result object from the spin
 
-## PixiJS Integration
+## Canvas 2D Rendering
 
-The framework includes built-in support for rendering games using PixiJS, a powerful 2D WebGL renderer. This provides several benefits:
+The framework uses the HTML5 Canvas 2D API for rendering games, which provides a simple, well-supported way to create 2D graphics in browsers.
 
-- Improved performance for complex games
-- Hardware acceleration
-- Advanced visual effects
-- Better asset management
-- Modern rendering capabilities
+### Notes on PIXI Removal
 
-### Using PixiJS in Your Game
+As of the latest version, PIXI has been removed from the core framework to simplify the codebase and reduce dependencies. This means:
 
-To use PixiJS in your game implementation, provide the `renderGameWithPixi` method in addition to the standard Canvas2D `renderGame` method:
+- All games now use Canvas 2D rendering by default
+- The `renderGameWithPixi` method is deprecated
+- The `PixiManager` class has been removed from the core framework
+
+### Using WebGL/PIXI in Your Game (Optional)
+
+If you still need WebGL or PIXI rendering for your specific game:
+
+1. Import PIXI directly in your game implementation file
+2. Implement your own PIXI rendering logic within your game class
+3. Create a canvas and PIXI application instance specific to your game
 
 ```javascript
-class YourGame extends BaseGame {
+class YourGameWithPixi extends BaseGame {
   constructor(config = {}) {
     super(config);
+    
+    // Initialize PIXI specifically for this game
+    this.pixiApp = new PIXI.Application({
+      width: 800,
+      height: 600,
+      backgroundColor: 0x000000,
+      antialias: true
+    });
+    
+    // Add the PIXI view to your game container
+    document.getElementById('pixi-container').appendChild(this.pixiApp.view);
+    
     // Game initialization
   }
   
-  // Standard Canvas2D rendering (fallback)
+  // Standard Canvas2D rendering (required)
   renderGame(ctx, width, height, state) {
-    // Render using Canvas2D API
+    // Standard Canvas2D rendering implementation
   }
   
-  // PixiJS rendering (preferred if available)
-  renderGameWithPixi(pixiApp, container, width, height, state) {
-    // Render using PixiJS
-    // container is a PIXI.Container for your game elements
-    
-    // Example: Create a sprite
-    const sprite = new PIXI.Sprite(PIXI.Texture.from('path/to/image.png'));
-    sprite.x = width / 2;
-    sprite.y = height / 2;
-    sprite.anchor.set(0.5);
-    container.addChild(sprite);
+  // Your custom PIXI rendering implementation
+  updatePixiScene(state) {
+    // Update your PIXI scene based on game state
   }
 }
-```
-
-### PixiHelper Utility
-
-The framework provides a `PixiHelper` utility to simplify common PixiJS operations:
-
-```javascript
-// Create sprites
-const sprite = await PixiHelper.createSprite('path/to/image.png', {
-  x: 100,
-  y: 100,
-  scale: 0.5,
-  anchor: 0.5
-});
-
-// Create text
-const text = PixiHelper.createText('Hello World', {
-  fontSize: 24,
-  fill: 0xFFFFFF
-}, {
-  x: 100,
-  y: 100,
-  anchor: 0.5
-});
-
-// Create animations
-const animation = await PixiHelper.createAnimation('path/to/spritesheet.json', 'animationName', {
-  x: 100,
-  y: 100,
-  animationSpeed: 0.5,
-  loop: true,
-  autoPlay: true
-});
-
-// Create shapes
-const circle = PixiHelper.createShape('circle', {
-  x: 100,
-  y: 100,
-  radius: 50,
-  fillColor: 0xFF0000
-});
 ```
 
 ## Example Games

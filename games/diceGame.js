@@ -146,10 +146,17 @@ class DiceGame extends BaseGame {
         console.error("Error requesting animation frame:", rafError);
       }
       
-      // Redraw only if game is initialized and not spinning
-      if (this.game && this.game.state && !this.game.state.isSpinning) {
+      // Redraw only if game state manager is initialized and not spinning
+      // Modified to work with the refactored framework
+      if (this.framework && 
+          this.framework.gameStateManager && 
+          this.framework.gameStateManager.state && 
+          !this.framework.gameStateManager.state.isSpinning) {
         try {
-          this.game.drawCanvas();
+          // Use the canvas manager to redraw
+          if (this.framework.canvasManager) {
+            this.framework.canvasManager.redraw();
+          }
         } catch (drawError) {
           console.error("Error drawing canvas:", drawError);
         }
@@ -373,7 +380,7 @@ class DiceGame extends BaseGame {
           this.drawDot(ctx, -size * 0.25, 0, size * 0.12);
           this.drawDot(ctx, -size * 0.25, size * 0.25, size * 0.12);
           this.drawDot(ctx, size * 0.25, -size * 0.25, size * 0.12);
-          this.  drawDot(ctx, size * 0.25, 0, size * 0.12);
+          this.drawDot(ctx, size * 0.25, 0, size * 0.12);
           this.drawDot(ctx, size * 0.25, size * 0.25, size * 0.12);
           break;
       }
@@ -401,149 +408,13 @@ class DiceGame extends BaseGame {
      * @param {number} height - The canvas height
      * @param {Object} state - The game state
      */
-    renderGameWithPixi(pixiApp, container, width, height, state) {
-      if (!pixiApp || !container) {
-        console.warn('PIXI renderer not available for DiceGame');
-        return;
-      }
-      
-      // Use static flag to prevent excessive logging - log only once
-      if (!this._loggedRenderInfoPixi) {
-        console.log('DiceGame.renderGameWithPixi - Initial PIXI render');
-        console.log('DiceGame.renderGameWithPixi - Initial render - diceValues:', this.diceValues);
-        console.log('DiceGame.renderGameWithPixi - Initial render - dicePositions:', this.dicePositions);
-        this._loggedRenderInfoPixi = true;
-      }
-      
-      try {
-        // Clear existing container
-        container.removeChildren();
-        
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Create background that fills the entire canvas
-        const background = new PIXI.Graphics();
-        
-        // Create gradient-like effect using multiple rectangles
-        const topColor = 0x0e3c0a;
-        const bottomColor = 0x195c1a;
-        
-        // Fill the entire canvas with gradient background
-        background.beginFill(topColor);
-        background.drawRect(0, 0, width, height);
-        background.endFill();
-        
-        // Add second color to create gradient effect
-        const gradientOverlay = new PIXI.Graphics();
-        gradientOverlay.beginFill(bottomColor, 0.6);
-        gradientOverlay.drawRect(0, height/2, width, height/2);
-        gradientOverlay.endFill();
-        
-        container.addChild(background);
-        container.addChild(gradientOverlay);
-        
-        // Create table that completely fills the canvas
-        const tableWidth = width; // 100% of width
-        const tableHeight = height; // 100% of height
-        
-        const table = new PIXI.Graphics();
-        table.beginFill(0x1a5d1a);
-        table.drawRect(
-          centerX - tableWidth/2, 
-          centerY - tableHeight/2, 
-          tableWidth, 
-          tableHeight
-        );
-        table.endFill();
-        
-        // Add felt texture/pattern with border that scales with table size
-        const borderWidth = Math.max(5, Math.floor(tableWidth * 0.015));
-        table.lineStyle(borderWidth, 0x0e4c0e); // Darker green border
-        table.drawRect(
-          centerX - tableWidth/2, 
-          centerY - tableHeight/2, 
-          tableWidth, 
-          tableHeight
-        );
-        
-        container.addChild(table);
-        
-        // Draw title with PIXI - font size scales with canvas
-        const titleFontSize = Math.max(24, Math.min(48, width * 0.05));
-        const titleStyle = new PIXI.TextStyle({
-          fontFamily: 'Poppins, Arial',
-          fontSize: titleFontSize,
-          fontWeight: 'bold',
-          fill: '#FFD700',
-          align: 'center'
-        });
-        
-        const titleText = new PIXI.Text(this.config.gameTitle, titleStyle);
-        titleText.anchor.set(0.5);
-        titleText.x = centerX;
-        titleText.y = centerY - tableHeight * 0.4;
-        
-        container.addChild(titleText);
-        
-        // Draw dice on the table - code for this will be added later
-        
-        // Draw simple instructions if dice aren't rolled yet
-        if (!this.diceValues || this.diceValues.length === 0) {
-          const instructionsFontSize = Math.max(16, Math.min(24, width * 0.025));
-          const instructionsStyle = new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: instructionsFontSize,
-            fill: '#FFFFFF',
-            align: 'center'
-          });
-          
-          const instructionsText = new PIXI.Text('Click SPIN to roll dice!', instructionsStyle);
-          instructionsText.anchor.set(0.5);
-          instructionsText.x = centerX;
-          instructionsText.y = centerY;
-          
-          container.addChild(instructionsText);
-        }
-        
-        // Add winning combinations - text size scales with canvas
-        const winTextSize = Math.max(12, Math.min(18, width * 0.018));
-        const winTextStyle = new PIXI.TextStyle({
-          fontFamily: 'Montserrat, Arial',
-          fontSize: winTextSize,
-          fill: '#FFFFFF',
-          align: 'left'
-        });
-        
-        // Position relative to table size
-        const winX = centerX - tableWidth * 0.45;
-        let winY = centerY - tableHeight * 0.3;
-        
-        const winTitleText = new PIXI.Text('Winning Combinations:', winTextStyle);
-        winTitleText.x = winX;
-        winTitleText.y = winY;
-        container.addChild(winTitleText);
-        
-        winY += winTextSize * 1.5;
-        const win1Text = new PIXI.Text('• All Same: 5x', winTextStyle);
-        win1Text.x = winX;
-        win1Text.y = winY;
-        container.addChild(win1Text);
-        
-        winY += winTextSize * 1.3;
-        const win2Text = new PIXI.Text('• Straight: 3x', winTextStyle);
-        win2Text.x = winX;
-        win2Text.y = winY;
-        container.addChild(win2Text);
-        
-        winY += winTextSize * 1.3;
-        const win3Text = new PIXI.Text('• One Pair: 1.5x', winTextStyle);
-        win3Text.x = winX;
-        win3Text.y = winY;
-        container.addChild(win3Text);
-      } catch (error) {
-        console.error('Error in PIXI dice game rendering:', error);
-      }
+    /**
+     * Deprecated method - PIXI has been removed from the core framework
+     * Games can implement their own PIXI rendering if needed
+     * @deprecated
+     */
+    renderGameWithPixi() {
+      console.warn('PIXI has been removed from the core framework. Use Canvas2D rendering instead or implement PIXI directly in your game.');
     }
     
     renderGame(ctx, width, height, state) {
@@ -737,6 +608,18 @@ class DiceGame extends BaseGame {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('No winning combination. Try again!', centerX, height * 0.9);
+    }
+
+    /**
+     * Initialize game managers for this specific game
+     * @param {Object} framework - The game framework
+     */
+    setFramework(framework) {
+      // Store reference to framework
+      this.framework = framework;
+      
+      // Log initialization
+      console.log('DiceGame: Framework reference set', framework);
     }
   }
   

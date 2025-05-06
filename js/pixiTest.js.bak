@@ -1,0 +1,40 @@
+/**
+ * PIXI Manager Test Script (Deprecated)
+ * 
+ * This test is now deprecated as PIXI has been removed from the core framework.
+ * This stub file remains to maintain compatibility with the test runner.
+ */
+
+(function() {
+  // Create an error marker function to communicate errors to the test runner
+  function markTestError(message) {
+    console.error('PIXI Test Error:', message);
+    const errorMarker = document.createElement('div');
+    errorMarker.className = 'test-error-pixiTest';
+    errorMarker.style.display = 'none';
+    document.body.appendChild(errorMarker);
+  }
+  
+  console.log('%c PIXI TESTS DEPRECATED', 'font-weight: bold; font-size: 14px; color: #f39c12;');
+  console.log('PIXI has been removed from the core framework. Tests are skipped.');
+  
+  // No error marker is created, so the test is considered successful
+  
+  // Create a minimal test result object
+  const testResults = {
+    skipped: true,
+    reason: "PIXI removed from framework"
+  };
+  
+  // Log minimal results
+  console.log('PIXI Manager test results:', testResults);
+  
+  // Report that we're using Canvas now
+  console.log('%c Using Canvas renderer for all games now', 'color: #2ecc71;');
+  
+  // Mark test as passed since this is expected behavior
+  console.log('%c PIXI Manager tests SKIPPED (marked as PASSED) ✓', 'font-weight: bold; font-size: 14px; color: #2ecc71;');
+  console.log('Framework now uses Canvas2D exclusively');
+  
+  return testResults;
+})();

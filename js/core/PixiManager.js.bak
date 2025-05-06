@@ -1,0 +1,759 @@
+/**
+ * PixiManager - Handles PixiJS integration and rendering
+ */
+class PixiManager {
+  /**
+   * Initialize the PixiJS manager
+   * @param {Object} config - Configuration object for PixiJS settings
+   * @param {Object} state - Current game state
+   * @param {CanvasManager} canvasManager - Reference to the canvas manager
+   */
+  constructor(config, state, canvasManager) {
+    this.config = config;
+    this.state = state;
+    this.canvasManager = canvasManager;
+    this.pixiApp = null;
+    this.pixiContainer = null;
+    this.pixiBackground = null;
+    this.pixiForeground = null;
+  }
+
+  /**
+   * Check if WebGL is supported in the browser
+   * @returns {boolean} - Whether WebGL is supported
+   */
+  isWebGLSupported() {
+    // First check if WebGL is already detected and cached
+    if (typeof window.webGLSupported !== 'undefined') {
+      console.log('Using cached WebGL support value:', window.webGLSupported);
+      return window.webGLSupported;
+    }
+    
+    try {
+      // Try to create a WebGL context - check WebGL2 first (preferred for PIXI v8)
+      const canvas = document.createElement('canvas');
+      let gl = null;
+      
+      // Try WebGL2 first, then fallback to WebGL1
+      try {
+        gl = canvas.getContext('webgl2');
+        if (gl) {
+          console.log('WebGL2 is supported');
+          window.webGLSupported = true;
+          return true;
+        }
+      } catch (e) {
+        console.warn('WebGL2 not supported, will try WebGL1');
+      }
+      
+      // Try WebGL1 as fallback
+      try {
+        gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        
+        // If we got a context, WebGL is supported
+        const isSupported = !!gl;
+        
+        // Cache the result
+        window.webGLSupported = isSupported;
+        
+        if (isSupported) {
+          console.log('WebGL1 is supported');
+        } else {
+          console.warn('Neither WebGL2 nor WebGL1 are supported');
+        }
+        
+        return isSupported;
+      } catch (e) {
+        console.warn('WebGL1 support check failed:', e);
+        window.webGLSupported = false;
+        return false;
+      } finally {
+        // Clean up
+        if (gl) {
+          const ext = gl.getExtension('WEBGL_lose_context');
+          if (ext) {
+            ext.loseContext();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('WebGL support check failed completely:', e);
+      window.webGLSupported = false;
+      return false;
+    }
+  }
+
+  /**
+   * Clean up PIXI resources
+   * Call this when switching games or layouts to prevent memory leaks
+   * Updated for PIXI v8 compatibility
+   */
+  cleanupPixi() {
+    // Clean up previous PIXI resources if they exist
+    if (this.pixiApp) {
+      try {
+        console.log('Cleaning up PIXI resources');
+        
+        // Clean up containers in reverse order (foreground first)
+        try {
+          if (this.pixiForeground) {
+            this.pixiForeground.removeChildren();
+            // In PIXI v8, destroy takes options object
+            this.pixiForeground.destroy?.({ children: true });
+            this.pixiForeground = null;
+          }
+        } catch (e) {
+          console.warn('Error cleaning pixiForeground:', e);
+        }
+        
+        try {
+          if (this.pixiBackground) {
+            this.pixiBackground.removeChildren();
+            this.pixiBackground.destroy?.({ children: true });
+            this.pixiBackground = null;
+          }
+        } catch (e) {
+          console.warn('Error cleaning pixiBackground:', e);
+        }
+        
+        try {
+          if (this.pixiContainer) {
+            this.pixiContainer.removeChildren();
+            this.pixiContainer.destroy?.({ children: true });
+            this.pixiContainer = null;
+          }
+        } catch (e) {
+          console.warn('Error cleaning pixiContainer:', e);
+        }
+        
+        // Handle PIXI application cleanup
+        try {
+          if (this.pixiApp) {
+            // PIXI v8 has a destroy method on the application
+            if (typeof this.pixiApp.destroy === 'function') {
+              console.log('Using PIXI v8 app.destroy() method');
+              this.pixiApp.destroy();
+            } 
+            // For custom app objects, handle renderer separately
+            else if (this.pixiApp.renderer && typeof this.pixiApp.renderer.destroy === 'function') {
+              console.log('Destroying renderer manually');
+              // First try to clean up stage if it exists
+              if (this.pixiApp.stage) {
+                this.pixiApp.stage.destroy?.({ children: true });
+              }
+              // Then destroy the renderer
+              this.pixiApp.renderer.destroy();
+            }
+            
+            this.pixiApp = null;
+            console.log('PIXI app destroyed successfully');
+          }
+        } catch (e) {
+          console.warn('Error destroying PIXI application:', e);
+          this.pixiApp = null;
+        }
+        
+        console.log('PIXI resources cleaned up successfully');
+      } catch (error) {
+        console.error('Error cleaning up PIXI resources:', error);
+      }
+    }
+  }
+
+  /**
+   * Initialize PixiJS
+   * @returns {boolean} - Whether PixiJS was successfully initialized
+   */
+  initPixi() {
+    // Get canvas from canvas manager
+    const { canvas } = this.canvasManager.getCanvas();
+    if (!canvas) {
+      console.error('Canvas not available for PIXI initialization');
+      return false;
+    }
+
+    // Clean up previous PIXI resources if they exist
+    this.cleanupPixi();
+    
+    try {
+      console.log('Initializing PixiJS v8 application');
+      
+      // Check if WebGL is supported (but don't force it - PIXI v8 can auto-select)
+      const webGLSupported = this.isWebGLSupported();
+      console.log('WebGL supported:', webGLSupported);
+      
+      // Verify PIXI is available
+      if (!window.PIXI) {
+        console.warn('PIXI.js not available in window, using Canvas2D fallback');
+        this.config.usePixi = false;
+        return false;
+      }
+      
+      // Log PIXI version information for debugging
+      console.log('PIXI Version:', window.PIXI.VERSION || 'Unknown');
+      
+      // PIXI v8 proper initialization
+      try {
+        // Create proper PIXI v8 application using new init pattern
+        console.log('Creating PIXI v8 Application with new initialization pattern');
+        
+        // PIXI v8 uses a new initialization pattern
+        const app = new PIXI.Application();
+        
+        // Initialize with our canvas and settings
+        try {
+          app.init({
+            canvas: canvas,
+            width: canvas.width,
+            height: canvas.height,
+            backgroundColor: this.canvasManager.getBackgroundColor(),
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true,
+            // Let PIXI choose the renderer (WebGL2, WebGL, Canvas)
+            // But prefer Canvas for more compatibility
+            preference: 'canvas', // Force canvas renderer to avoid WebGL issues
+            // Add any extra options from config
+            ...this.config.pixiOptions
+          });
+        } catch (initError) {
+          console.error("PIXI app.init failed:", initError);
+          throw new Error("PIXI initialization failed");
+        }
+        
+        this.pixiApp = app;
+        console.log('PIXI v8 application initialized successfully');
+        
+        // Create containers for organization
+        // Create a container for all game elements
+        this.pixiContainer = new PIXI.Container();
+        this.pixiApp.stage.addChild(this.pixiContainer);
+        
+        // Create a background container
+        this.pixiBackground = new PIXI.Container();
+        this.pixiContainer.addChild(this.pixiBackground);
+        
+        // Create a foreground container for UI elements
+        this.pixiForeground = new PIXI.Container();
+        this.pixiContainer.addChild(this.pixiForeground);
+        
+        console.log('PIXI v8 containers initialized successfully');
+        
+        // Log renderer information
+        if (this.pixiApp.renderer) {
+          const rendererType = this.pixiApp.renderer.type || 'unknown';
+          console.log(`PIXI renderer type: ${rendererType}`);
+        }
+        
+        // Force a render after initialization
+        this.pixiApp.render();
+        
+        // Log success
+        console.log('PIXI v8 initialization completed successfully');
+        
+        return true;
+      } catch (err) {
+        console.error('Error initializing PIXI v8 with modern approach:', err);
+        // Continue to fallback approach
+      }
+      
+      // Fallback to simplified approach if modern initialization failed
+      try {
+        console.log('Falling back to simplified PIXI initialization');
+        
+        // Try to use PixiHelper if available
+        if (window.PixiHelper && window.PixiHelper.initApp) {
+          console.log('Using PixiHelper.initApp for initialization');
+          this.pixiApp = window.PixiHelper.initApp(canvas, {
+            backgroundColor: this.canvasManager.getBackgroundColor(),
+            resolution: window.devicePixelRatio || 1,
+            ...this.config.pixiOptions
+          });
+          
+          // Verify app was created
+          if (this.pixiApp) {
+            console.log('PixiHelper.initApp returned valid app');
+            
+            // Setup containers
+            this.pixiContainer = new PIXI.Container();
+            this.pixiApp.stage.addChild(this.pixiContainer);
+            
+            this.pixiBackground = new PIXI.Container();
+            this.pixiContainer.addChild(this.pixiBackground);
+            
+            this.pixiForeground = new PIXI.Container();
+            this.pixiContainer.addChild(this.pixiForeground);
+            
+            console.log('PIXI initialization via PixiHelper successful');
+            return true;
+          }
+          console.warn('PixiHelper.initApp returned null, trying manual approach');
+        }
+        
+        // Try the most basic fallback - manually create basic objects
+        console.log('Creating minimal PIXI app manually');
+        
+        try {
+          // First try WebGL renderer
+          const renderer = new PIXI.Renderer({
+            width: canvas.width,
+            height: canvas.height,
+            view: canvas,
+            backgroundColor: this.canvasManager.getBackgroundColor(),
+            backgroundAlpha: 1,
+            resolution: window.devicePixelRatio || 1
+          });
+          
+          console.log('WebGL renderer created successfully');
+          
+          // Create manual app object
+          this.pixiApp = {
+            renderer: renderer,
+            stage: new PIXI.Container(),
+            render: function() {
+              if (this.renderer && this.stage) {
+                this.renderer.render(this.stage);
+              }
+            },
+            // Simple destroy method
+            destroy: function() {
+              if (this.renderer) {
+                this.renderer.destroy();
+              }
+            }
+          };
+        } catch (webglError) {
+          console.warn('WebGL renderer failed, trying Canvas renderer:', webglError);
+          
+          // If WebGL fails, try Canvas renderer
+          try {
+            let rendererOptions = {
+              width: canvas.width,
+              height: canvas.height,
+              backgroundAlpha: 1
+            };
+            
+            // Handle view/canvas parameter correctly based on version
+            if (PIXI.VERSION && PIXI.VERSION.startsWith('8')) {
+              rendererOptions.canvas = canvas;
+            } else {
+              rendererOptions.view = canvas;
+            }
+            
+            // Add background color
+            rendererOptions.background = this.canvasManager.getBackgroundColor();
+            
+            // Create canvas renderer with error handling for different PIXI versions
+            let canvasRenderer;
+            try {
+              canvasRenderer = new PIXI.CanvasRenderer(rendererOptions);
+            } catch (versionError) {
+              // Older versions might use a different signature
+              console.warn('Modern CanvasRenderer initialization failed, trying legacy approach:', versionError);
+              canvasRenderer = new PIXI.CanvasRenderer(
+                canvas.width, 
+                canvas.height,
+                { 
+                  view: canvas,
+                  backgroundColor: this.canvasManager.getBackgroundColor()
+                }
+              );
+            }
+            console.log('Canvas renderer created successfully');
+            
+            // Create app object with canvas renderer
+            this.pixiApp = {
+              renderer: canvasRenderer,
+              stage: new PIXI.Container(),
+              render: function() {
+                if (this.renderer && this.stage) {
+                  this.renderer.render(this.stage);
+                }
+              },
+              destroy: function() {
+                if (this.renderer) {
+                  this.renderer.destroy();
+                }
+              }
+            };
+          } catch (canvasError) {
+            console.error('Canvas renderer also failed:', canvasError);
+            // No renderers available, throw error to fallback to Canvas2D
+            throw new Error('No available renderers');
+          }
+        }
+        
+        // If we got here, we have a valid pixiApp with renderer and stage
+        
+        // Setup containers
+        this.pixiContainer = new PIXI.Container();
+        this.pixiApp.stage.addChild(this.pixiContainer);
+        
+        this.pixiBackground = new PIXI.Container();
+        this.pixiContainer.addChild(this.pixiBackground);
+        
+        this.pixiForeground = new PIXI.Container();
+        this.pixiContainer.addChild(this.pixiForeground);
+        
+        console.log('PIXI minimal fallback initialization successful');
+        return true;
+      } catch (fallbackError) {
+        console.error('All PIXI initialization approaches failed:', fallbackError);
+        // Final fallback: disable PIXI completely and use Canvas2D
+        this.config.usePixi = false;
+        this.cleanupPixi();
+        return false;
+      }
+      
+    } catch (error) {
+      console.error('Failed to initialize PIXI:', error);
+      this.config.usePixi = false;
+      this.cleanupPixi();
+      return false;
+    }
+  }
+
+  /**
+   * Create a gradient texture for Pixi
+   * @param {string} color1 - Start color in hex format
+   * @param {string} color2 - End color in hex format
+   * @param {boolean} horizontal - Whether the gradient is horizontal
+   * @returns {PIXI.Texture} - The created texture
+   */
+  createGradientTexture(color1, color2, horizontal = false) {
+    try {
+      const quality = 256;
+      const canvas = document.createElement('canvas');
+      
+      if (!canvas) {
+        console.warn('Failed to create canvas for gradient texture');
+        return null;
+      }
+      
+      // For horizontal gradient, make a wide but not tall canvas
+      // For vertical gradient, make a tall but not wide canvas
+      if (horizontal) {
+        canvas.width = quality;
+        canvas.height = 1;
+      } else {
+        canvas.width = 1;
+        canvas.height = quality;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('Failed to get canvas context for gradient texture');
+        return null;
+      }
+      
+      // Create gradient
+      const gradient = horizontal 
+        ? ctx.createLinearGradient(0, 0, quality, 0)
+        : ctx.createLinearGradient(0, 0, 0, quality);
+      
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Use the most compatible way to create a texture
+      try {
+        // Try PIXI v8 approach first
+        if (PIXI.Texture.fromCanvas) {
+          return PIXI.Texture.fromCanvas(canvas);
+        } else if (PIXI.Texture.from) {
+          return PIXI.Texture.from(canvas);
+        } else {
+          // Fallback for PIXI v8
+          const baseTexture = new PIXI.BaseTexture(canvas);
+          return new PIXI.Texture(baseTexture);
+        }
+      } catch (textureError) {
+        console.warn('Error creating texture from canvas:', textureError);
+        return null;
+      }
+    } catch (error) {
+      console.warn('Error creating gradient texture:', error);
+      // Return a simple colored base texture as fallback
+      try {
+        return PIXI.Texture.WHITE;
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Draw grid using PixiJS
+   */
+  drawGridWithPixi() {
+    if (!this.pixiBackground) return;
+
+    const { width, height } = this.canvasManager.getCanvas();
+    
+    const gridGraphics = new PIXI.Graphics();
+    gridGraphics.lineStyle(1, 0xFFFFFF, 0.1);
+    
+    // Calculate grid size based on canvas dimensions
+    // Adjust grid spacing to avoid too many lines on large canvases
+    let gridSize = 100;
+    const maxGridLines = 30; // Maximum number of grid lines in either direction
+    
+    if (width / gridSize > maxGridLines) {
+      gridSize = Math.ceil(width / maxGridLines / 100) * 100;
+    }
+    
+    // Vertical grid lines
+    for (let x = 0; x < width; x += gridSize) {
+      gridGraphics.moveTo(x, 0);
+      gridGraphics.lineTo(x, height);
+    }
+    
+    // Horizontal grid lines
+    for (let y = 0; y < height; y += gridSize) {
+      gridGraphics.moveTo(0, y);
+      gridGraphics.lineTo(width, y);
+    }
+    
+    // Add the grid to the background
+    this.pixiBackground.addChild(gridGraphics);
+    
+    // Draw center marker
+    const centerMarker = new PIXI.Graphics();
+    centerMarker.lineStyle(2, 0xFFFF00, 0.3);
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Horizontal center line
+    centerMarker.moveTo(centerX - 50, centerY);
+    centerMarker.lineTo(centerX + 50, centerY);
+    
+    // Vertical center line
+    centerMarker.moveTo(centerX, centerY - 50);
+    centerMarker.lineTo(centerX, centerY + 50);
+    
+    this.pixiBackground.addChild(centerMarker);
+  }
+
+  /**
+   * Draw using the PixiJS renderer
+   * @param {Function} renderGameWithPixi - Function to render game content with PIXI
+   * @param {Function} renderGameWithCanvas - Fallback function for Canvas2D rendering
+   */
+  drawWithPixi(renderGameWithPixi, renderGameWithCanvas) {
+    // Get canvas dimensions from canvas manager
+    const { width, height } = this.canvasManager.getCanvas();
+
+    // Check if PIXI is properly initialized
+    if (!this.pixiApp || !this.pixiApp.renderer || !this.pixiBackground || !this.pixiForeground) {
+      console.error('PIXI not properly initialized, falling back to Canvas2D');
+      if (typeof renderGameWithCanvas === 'function') {
+        this.canvasManager.drawWithCanvas2D(renderGameWithCanvas);
+      }
+      return;
+    }
+    
+    try {
+      // Clear existing containers
+      this.pixiBackground.removeChildren();
+      this.pixiForeground.removeChildren();
+      
+      // Create background with gradient (using a rectangle)
+      const colors = this.config.canvasBackground && this.config.canvasBackground[this.state.theme] 
+        ? this.config.canvasBackground[this.state.theme]
+        : ['#071824', '#071d2a']; // Default colors
+        
+      // Convert hex to number for the base color
+      const baseColor = parseInt(colors[0].replace('#', ''), 16);
+      
+      // Create a simple colored background as fallback that fills the entire canvas
+      const background = new PIXI.Graphics();
+      
+      // Use simple fill for compatibility with all PixiJS versions
+      background.beginFill(baseColor, 1);
+      background.drawRect(0, 0, width, height);
+      background.endFill();
+      
+      // Create gradient as a separate sprite for better compatibility
+      try {
+        // Create vertical or horizontal gradient based on layout
+        const gradientTexture = this.state.layout === 'pc' 
+          ? this.createGradientTexture(colors[0], colors[1], false)
+          : this.createGradientTexture(colors[0], colors[1], true);
+          
+        if (gradientTexture) {
+          // Create sprite with gradient texture - fill the entire canvas
+          const gradientSprite = new PIXI.Sprite(gradientTexture);
+          gradientSprite.width = width;
+          gradientSprite.height = height;
+          
+          // Add to background container
+          this.pixiBackground.addChild(gradientSprite);
+        }
+      } catch (error) {
+        console.warn('Gradient background not supported in this PixiJS version, using solid color', error);
+        // Fallback is the solid background already added
+      }
+      
+      // Add background to container
+      this.pixiBackground.addChild(background);
+      
+      // Draw grid if in debug mode
+      if (window.debugManager && window.debugManager.isDebugEnabled) {
+        this.drawGridWithPixi();
+        
+        // Add canvas size indicator in debug mode
+        const sizeText = window.PixiHelper.createText(
+          `Canvas: ${width}×${height}`,
+          {
+            fontFamily: 'monospace',
+            fontSize: 14,
+            fontWeight: 'bold',
+            fill: 0xFFFFFF,
+            alpha: 0.7
+          },
+          {
+            x: 10,
+            y: 10,
+            anchor: { x: 0, y: 0 }
+          }
+        );
+        this.pixiBackground.addChild(sizeText);
+      }
+      
+      // Call the game's render function with safety check
+      if (typeof renderGameWithPixi === 'function') {
+        try {
+          renderGameWithPixi(this.pixiApp, this.pixiContainer, width, height, this.state);
+        } catch (error) {
+          console.error('Error in game renderGameWithPixi:', error);
+          this.renderFallbackGameWithPixi();
+        }
+      } else if (typeof renderGameWithCanvas === 'function') {
+        // Fall back to Canvas2D rendering if no Pixi renderer is provided
+        this.canvasManager.drawWithCanvas2D(renderGameWithCanvas);
+        return;
+      } else {
+        this.renderFallbackGameWithPixi();
+      }
+      
+      // Force a render for PIXI v8
+      try {
+        if (this.pixiApp && this.pixiApp.render) {
+          this.pixiApp.render();
+        }
+      } catch (err) {
+        console.warn('Error forcing PIXI render:', err);
+      }
+      
+    } catch (mainError) {
+      console.error('Error in drawWithPixi:', mainError);
+      // If PIXI rendering fails completely, fall back to Canvas2D
+      if (typeof renderGameWithCanvas === 'function') {
+        this.canvasManager.drawWithCanvas2D(renderGameWithCanvas);
+      }
+    }
+  }
+
+  /**
+   * Render fallback game using PixiJS
+   */
+  renderFallbackGameWithPixi() {
+    if (!this.pixiForeground) return;
+
+    const { width, height } = this.canvasManager.getCanvas();
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Game title
+    const titleText = window.PixiHelper.createText(
+      this.config.gameTitle || 'Game Prototype',
+      {
+        fontFamily: 'Arial',
+        fontSize: 48,
+        fontWeight: 'bold',
+        fill: 0xFFD700,
+        align: 'center'
+      },
+      {
+        x: centerX,
+        y: centerY - 80,
+        anchor: 0.5
+      }
+    );
+    
+    // Instructions
+    const instructionsText = window.PixiHelper.createText(
+      'Game is initializing...',
+      {
+        fontFamily: 'Arial',
+        fontSize: 24,
+        fill: 0xFFFFFF,
+        align: 'center'
+      },
+      {
+        x: centerX,
+        y: centerY,
+        anchor: 0.5
+      }
+    );
+    
+    // Click to play
+    const clickText = window.PixiHelper.createText(
+      'Click SPIN to play',
+      {
+        fontFamily: 'Arial',
+        fontSize: 18,
+        fill: 0xFFFFFF,
+        alpha: 0.6,
+        align: 'center'
+      },
+      {
+        x: centerX,
+        y: centerY + 50,
+        anchor: 0.5
+      }
+    );
+    
+    // Add to container
+    this.pixiForeground.addChild(titleText);
+    this.pixiForeground.addChild(instructionsText);
+    this.pixiForeground.addChild(clickText);
+  }
+
+  /**
+   * Resize the PIXI application to match the canvas dimensions
+   */
+  resize() {
+    const { width, height } = this.canvasManager.getCanvas();
+    
+    if (this.pixiApp && this.pixiApp.renderer) {
+      try {
+        // PIXI v8 resize
+        this.pixiApp.renderer.resize(width, height);
+        // Render after resize
+        this.pixiApp.render();
+        console.log(`PIXI renderer resized to: ${width}×${height}`);
+      } catch (error) {
+        console.error('Error resizing PIXI renderer:', error);
+      }
+    }
+  }
+
+  /**
+   * Get the PIXI application and containers
+   * @returns {Object} Object containing PIXI objects
+   */
+  getPixi() {
+    return {
+      pixiApp: this.pixiApp,
+      pixiContainer: this.pixiContainer,
+      pixiBackground: this.pixiBackground,
+      pixiForeground: this.pixiForeground
+    };
+  }
+}
+
+// Export the PIXI manager
+window.PixiManager = PixiManager;

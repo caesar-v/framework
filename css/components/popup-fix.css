@@ -1,0 +1,73 @@
+/**
+ * Emergency popup fix styling
+ * This ensures popups always appear correctly even after test runs
+ */
+
+/* Reset overlay styling */
+#menu-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#menu-overlay.active {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Popup styling - ensure centered positioning */
+.popup {
+  position: relative !important;
+  margin: 50px auto !important;
+  max-width: 90% !important;
+  width: 500px !important;
+  background-color: var(--color-surface) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+  color: var(--color-foreground) !important;
+  overflow: hidden !important;
+  z-index: 1001 !important;
+}
+
+/* Ensure tabs are properly displayed */
+.popup-tabs {
+  display: flex !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.popup-tab {
+  padding: 12px 16px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  color: var(--color-foreground-secondary) !important;
+  transition: color 0.2s ease !important;
+  border-bottom: 3px solid transparent !important;
+}
+
+.popup-tab.active {
+  color: var(--color-primary) !important;
+  border-bottom-color: var(--color-primary) !important;
+}
+
+/* Ensure content is properly displayed */
+.tab-content {
+  display: none !important;
+  padding: 20px !important;
+}
+
+.tab-content.active {
+  display: block !important;
+}

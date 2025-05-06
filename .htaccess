@@ -1,0 +1,19 @@
+# Ensure JavaScript files are served with the correct MIME type
+AddType application/javascript .js
+AddType application/javascript .mjs
+
+# Allow ES modules with correct headers
+<FilesMatch "\.js$">
+  <IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+  </IfModule>
+</FilesMatch>
+
+# Prevent caching during development for easier testing
+<FilesMatch "\.(html|js|css)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </IfModule>
+</FilesMatch>

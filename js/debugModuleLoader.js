@@ -1,0 +1,131 @@
+/**
+ * Script Module Loader Debug Utility
+ * This script helps identify and fix module loading errors
+ */
+
+(function() {
+  console.log('Module Loader Debug: Initializing');
+  
+  // Store original createElement and appendChild to monitor script creation
+  const originalCreateElement = document.createElement;
+  const originalAppendChild = Node.prototype.appendChild;
+  
+  // Override createElement to track script element creation
+  document.createElement = function(tagName) {
+    const element = originalCreateElement.call(document, tagName);
+    
+    // If creating a script element, monitor its attributes
+    if (tagName.toLowerCase() === 'script') {
+      console.log('Module Loader Debug: Script element created');
+      
+      // Store original setAttribute method
+      const originalSetAttribute = element.setAttribute;
+      
+      // Override setAttribute to catch type="module" settings
+      element.setAttribute = function(name, value) {
+        if (name.toLowerCase() === 'type' && value === 'module') {
+          console.warn('Module Loader Debug: Detected type="module" attribute being set', {
+            element: this,
+            stack: new Error().stack
+          });
+          
+          // Instead of setting type="module", force it to be a regular script
+          // This prevents module loading errors when the server isn't configured for modules
+          console.log('Module Loader Debug: Preventing module script loading, using regular script instead');
+          return originalSetAttribute.call(this, 'type', 'text/javascript');
+        }
+        
+        return originalSetAttribute.call(this, name, value);
+      };
+    }
+    
+    return element;
+  };
+  
+  // Override appendChild to track script insertion into DOM
+  Node.prototype.appendChild = function(node) {
+    // If appending a script element, check its src attribute
+    if (node.tagName && node.tagName.toLowerCase() === 'script' && node.src) {
+      console.log('Module Loader Debug: Script being appended with src:', node.src);
+      
+      // Check if the script is trying to load a bundle file
+      if (node.src.includes('bundle.js')) {
+        console.warn('Module Loader Debug: Detected bundle.js script loading:', node.src);
+        
+        // If it's trying to load content.bundle.js specifically, prevent it
+        if (node.src.includes('content.bundle.js')) {
+          console.error('Module Loader Debug: Blocking content.bundle.js load attempt to prevent errors');
+          console.trace('Stack trace for content.bundle.js load attempt:');
+          
+          // Create an empty script to satisfy the request without actually loading
+          const emptyScript = originalCreateElement.call(document, 'script');
+          emptyScript.type = 'text/javascript';
+          emptyScript.text = '/* Content bundle load prevented by module debug utility */';
+          
+          // Fire the load event after a brief delay
+          setTimeout(() => {
+            if (typeof node.onload === 'function') {
+              node.onload();
+            }
+            
+            // Create and dispatch a synthetic load event
+            const event = new Event('load');
+            node.dispatchEvent(event);
+          }, 50);
+          
+          // Return the empty script instead
+          return originalAppendChild.call(this, emptyScript);
+        }
+      }
+    }
+    
+    // Default behavior for all other elements
+    return originalAppendChild.call(this, node);
+  };
+  
+  // Also monitor fetch requests to find any module loading via fetch
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    if (typeof url === 'string' && url.includes('bundle.js')) {
+      console.warn('Module Loader Debug: Detected fetch request for bundle:', url);
+      console.trace('Stack trace for bundle fetch:');
+    }
+    return originalFetch.apply(this, arguments);
+  };
+  
+  // Report loaded scripts for diagnosis
+  const reportLoadedScripts = () => {
+    const scripts = document.querySelectorAll('script');
+    console.log(`Module Loader Debug: ${scripts.length} scripts currently in document:`);
+    scripts.forEach((script, index) => {
+      console.log(`  [${index}] ${script.src || '(inline script)'} ${script.type ? `(type: ${script.type})` : ''}`);
+    });
+  };
+  
+  // Check for PIXI.js
+  window.addEventListener('DOMContentLoaded', () => {
+    console.log('Module Loader Debug: DOM loaded, checking script elements');
+    reportLoadedScripts();
+    
+    // Check if PIXI exists on window
+    if (window.PIXI) {
+      console.warn('Module Loader Debug: PIXI detected on window object despite being removed from core');
+      console.log('PIXI version:', window.PIXI.VERSION);
+    } else {
+      console.log('Module Loader Debug: PIXI not detected on window object');
+    }
+    
+    // Show active scripts on the page
+    setTimeout(reportLoadedScripts, 1000);
+  });
+  
+  // Add a listener to detect content.bundle.js errors specifically
+  window.addEventListener('error', function(event) {
+    if (event.filename && event.filename.includes('content.bundle.js')) {
+      console.error('Module Loader Debug: Caught error from content.bundle.js:', event);
+    }
+  }, true);
+  
+  console.log('Module Loader Debug: Initialization complete');
+})();
+</script>

@@ -168,12 +168,35 @@ class CardGame extends BaseGame {
         }
       }
       
-      // Request next frame
-      requestAnimationFrame(() => this.animate());
+      // Request next frame - using a more stable approach with error handling
+      try {
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(() => {
+            try {
+              this.animate();
+            } catch (animError) {
+              console.error("Animation loop error:", animError);
+            }
+          });
+        }
+      } catch (rafError) {
+        console.error("Error requesting animation frame:", rafError);
+      }
       
-      // Redraw only if game is initialized and not spinning
-      if (this.game && !this.game.state.isSpinning) {
-        this.game.drawCanvas();
+      // Redraw only if game state manager is initialized and not spinning
+      // Modified to work with the refactored framework
+      if (this.framework && 
+          this.framework.gameStateManager && 
+          this.framework.gameStateManager.state && 
+          !this.framework.gameStateManager.state.isSpinning) {
+        try {
+          // Use the canvas manager to redraw
+          if (this.framework.canvasManager) {
+            this.framework.canvasManager.redraw();
+          }
+        } catch (drawError) {
+          console.error("Error drawing canvas:", drawError);
+        }
       }
     }
     
@@ -466,129 +489,13 @@ class CardGame extends BaseGame {
      * @param {number} height - The canvas height
      * @param {Object} state - The game state
      */
-    renderGameWithPixi(pixiApp, container, width, height, state) {
-      if (!pixiApp || !container) {
-        console.warn('PIXI renderer not available for CardGame');
-        return;
-      }
-      
-      // Use static flag to prevent excessive logging - log only once
-      if (!this._loggedRenderInfoPixi) {
-        console.log('CardGame.renderGameWithPixi - Initial PIXI render');
-        console.log('CardGame.renderGameWithPixi - Initial render - cards:', this.cards);
-        console.log('CardGame.renderGameWithPixi - Initial render - cardPositions:', this.cardPositions);
-        this._loggedRenderInfoPixi = true;
-      }
-      
-      try {
-        // Clear existing container
-        container.removeChildren();
-        
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // Create full-canvas background
-        const background = new PIXI.Graphics();
-        background.beginFill(0x0E5A3C); // Dark green
-        background.drawRect(0, 0, width, height);
-        background.endFill();
-        container.addChild(background);
-        
-        // Create table with felt that completely fills the canvas
-        // Table size exactly matches the canvas dimensions
-        const tableWidth = width; // 100% of width
-        const tableHeight = height; // 100% of height
-        
-        // Draw felt
-        const table = new PIXI.Graphics();
-        table.beginFill(0x27ae60); // Felt green
-        table.drawRect(
-          centerX - tableWidth/2,
-          centerY - tableHeight/2,
-          tableWidth,
-          tableHeight
-        );
-        table.endFill();
-        
-        // Draw table border
-        const borderWidth = Math.max(10, tableWidth * 0.02);
-        table.lineStyle(borderWidth, 0x1e8449);
-        table.drawRect(
-          centerX - tableWidth/2,
-          centerY - tableHeight/2,
-          tableWidth,
-          tableHeight
-        );
-        
-        container.addChild(table);
-        
-        // Draw title - positioned proportionally to the table
-        const titleFontSize = Math.max(32, Math.min(48, height * 0.06));
-        const titleStyle = new PIXI.TextStyle({
-          fontFamily: 'Poppins, Arial',
-          fontSize: titleFontSize,
-          fontWeight: 'bold',
-          fill: '#FFD700',
-          align: 'center'
-        });
-        
-        const titleText = new PIXI.Text(this.config.gameTitle, titleStyle);
-        titleText.anchor.set(0.5);
-        titleText.x = centerX;
-        titleText.y = centerY - tableHeight * 0.45;
-        
-        container.addChild(titleText);
-        
-        // Draw simple instructions if cards aren't dealt yet
-        if (!this.cards || this.cards.length === 0) {
-          const instructionsFontSize = Math.max(16, Math.min(24, height * 0.03));
-          const instructionsStyle = new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: instructionsFontSize,
-            fill: '#FFFFFF',
-            align: 'center'
-          });
-          
-          const instructionsText = new PIXI.Text('Click SPIN to deal cards!', instructionsStyle);
-          instructionsText.anchor.set(0.5);
-          instructionsText.x = centerX;
-          instructionsText.y = centerY;
-          
-          container.addChild(instructionsText);
-          
-          // Also add paytable
-          const handsFontSize = Math.max(14, Math.min(18, height * 0.022));
-          const handsStyle = new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: handsFontSize,
-            fill: '#FFFFFF',
-            align: 'left'
-          });
-          
-          const winningsX = centerX + tableWidth * 0.25;
-          let y = centerY - tableHeight * 0.25;
-          
-          const paytableTitle = new PIXI.Text('Winning Hands:', handsStyle);
-          paytableTitle.x = winningsX;
-          paytableTitle.y = y;
-          container.addChild(paytableTitle);
-          
-          // Add winning hands
-          y += handsFontSize * 1.5;
-          const item1 = new PIXI.Text('• Royal Flush: 15x', handsStyle);
-          item1.x = winningsX;
-          item1.y = y;
-          container.addChild(item1);
-          
-          y += handsFontSize * 1.4;
-          const item2 = new PIXI.Text('• Straight: 8x', handsStyle);
-          item2.x = winningsX;
-          item2.y = y;
-          container.addChild(item2);
-        }
-      } catch (error) {
-        console.error('Error in PIXI card game rendering:', error);
-      }
+    /**
+     * Deprecated method - PIXI has been removed from the core framework
+     * Games can implement their own PIXI rendering if needed
+     * @deprecated
+     */
+    renderGameWithPixi() {
+      console.warn('PIXI has been removed from the core framework. Use Canvas2D rendering instead or implement PIXI directly in your game.');
     }
     
     renderGame(ctx, width, height, state) {
@@ -778,8 +685,19 @@ class CardGame extends BaseGame {
       ctx.textBaseline = 'middle';
       ctx.fillText('No winning hand. Try again!', centerX, height - 100);
     }
+
+    /**
+     * Initialize game managers for this specific game
+     * @param {Object} framework - The game framework
+     */
+    setFramework(framework) {
+      // Store reference to framework
+      this.framework = framework;
+      
+      // Log initialization
+      console.log('CardGame: Framework reference set', framework);
+    }
   }
   
 // Export to global scope
 window.CardGame = CardGame;
-  

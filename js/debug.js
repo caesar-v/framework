@@ -15,172 +15,114 @@
     info: (message, ...data) => this.isDebugEnabled ? console.info(`[INFO] ${message}`, ...data) : null,
     log: (message, ...data) => this.isDebugEnabled ? console.log(`[DEBUG] ${message}`, ...data) : null,
     
-    // PIXI debug utilities
-    pixi: {
-      // Test PIXI initialization
+    // Canvas rendering debug utilities
+    canvas: {
+      // Test Canvas initialization
       testInit: function() {
-        console.group('PIXI Initialization Test');
+        console.group('Canvas Initialization Test');
         
-        // Check if PIXI is loaded
-        console.log('PIXI available:', !!window.PIXI);
-        if (!window.PIXI) {
-          console.error('PIXI is not loaded!');
+        // Check if CanvasManager is loaded
+        console.log('CanvasManager available:', !!window.CanvasManager);
+        if (!window.CanvasManager) {
+          console.error('CanvasManager is not loaded!');
           console.groupEnd();
           return false;
         }
         
-        // Log PIXI version info
-        console.log('PIXI Version:', window.PIXI.VERSION);
+        // Check if canvas exists
+        const canvas = document.getElementById('game-canvas');
+        console.log('Canvas element found:', !!canvas);
+        if (!canvas) {
+          console.error('Game canvas not found!');
+          console.groupEnd();
+          return false;
+        }
         
-        // Check for essential classes
-        console.log('PIXI.Application:', !!window.PIXI.Application);
-        console.log('PIXI.Container:', !!window.PIXI.Container);
-        console.log('PIXI.Sprite:', !!window.PIXI.Sprite);
-        console.log('PIXI.Assets:', !!window.PIXI.Assets);
+        console.log('Canvas dimensions:', `${canvas.width}×${canvas.height}`);
         
-        // Check renderer types
-        console.log('PIXI.Renderer (WebGL):', !!window.PIXI.Renderer);
-        console.log('PIXI.CanvasRenderer:', !!window.PIXI.CanvasRenderer);
-        
-        // Check for PIXI v8 specific features
-        const isV8 = typeof window.PIXI.Application === 'function' && 
-                    typeof window.PIXI.Application.prototype.init === 'function';
-        console.log('Is PIXI v8:', isV8);
-        
-        // Test if PixiHelper is available
-        console.log('PixiHelper available:', !!window.PixiHelper);
+        // Test getting 2D context
+        try {
+          const ctx = canvas.getContext('2d');
+          console.log('Canvas 2D context available:', !!ctx);
+          if (!ctx) {
+            console.error('Failed to get 2D context from canvas!');
+            console.groupEnd();
+            return false;
+          }
+        } catch (e) {
+          console.error('Error getting 2D context:', e);
+          console.groupEnd();
+          return false;
+        }
         
         console.groupEnd();
         return true;
       },
       
-      // Test creating a simple renderer on a temporary canvas
-      testRenderer: function() {
-        console.group('PIXI Renderer Test');
+      // Test basic Canvas drawing
+      testDrawing: function() {
+        console.group('Canvas Drawing Test');
         
-        // Create a temporary canvas for testing
-        const canvas = document.createElement('canvas');
-        canvas.width = 400;
-        canvas.height = 300;
+        // Get canvas
+        const canvas = document.getElementById('game-canvas');
+        if (!canvas) {
+          console.error('Canvas element not found');
+          console.groupEnd();
+          return false;
+        }
         
         try {
-          // Try to create a PIXI application
-          console.log('Creating PIXI Application...');
+          // Get context
+          const ctx = canvas.getContext('2d');
           
-          // Use v8 approach
-          const app = new PIXI.Application();
-          app.init({
-            canvas: canvas,
-            width: canvas.width,
-            height: canvas.height,
-            backgroundColor: 0x1099bb,
-            // Let PIXI choose the appropriate renderer
-            preference: 'webgl2,webgl,canvas'
-          });
+          // Store original content to restore later
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           
-          console.log('PIXI Application created successfully');
+          // Draw a test shape
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+          ctx.fillRect(20, 20, 100, 100);
           
-          // Check which renderer type was chosen
-          console.log('Renderer type:', app.renderer.type || 'unknown');
+          // Draw some text
+          ctx.fillStyle = 'white';
+          ctx.font = '16px Arial';
+          ctx.fillText('Canvas Test', 40, 70);
           
-          // Create a simple container with a rect
-          const container = new PIXI.Container();
-          app.stage.addChild(container);
+          console.log('Drawing operations completed');
           
-          const graphics = new PIXI.Graphics();
-          graphics.beginFill(0xFF0000);
-          graphics.drawRect(150, 100, 100, 100);
-          graphics.endFill();
-          container.addChild(graphics);
-          
-          // Try to render
-          app.render();
-          console.log('Rendering worked successfully');
-          
-          // Clean up
-          app.destroy();
-          console.log('PIXI Application destroyed successfully');
+          // Restore original content after a delay
+          setTimeout(() => {
+            ctx.putImageData(imageData, 0, 0);
+          }, 1000);
           
           console.groupEnd();
           return true;
-        } catch (error) {
-          console.error('Error in PIXI renderer test:', error);
+        } catch (e) {
+          console.error('Error in canvas drawing test:', e);
           console.groupEnd();
           return false;
         }
       },
       
-      // Test using PixiHelper
-      testPixiHelper: function() {
-        console.group('PixiHelper Test');
-        
-        if (!window.PixiHelper) {
-          console.error('PixiHelper not available');
-          console.groupEnd();
-          return false;
-        }
-        
-        // Create a temporary canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 400;
-        canvas.height = 300;
-        
-        try {
-          // Try to create a PIXI application using PixiHelper
-          console.log('Creating PIXI app via PixiHelper...');
-          const app = window.PixiHelper.initApp(canvas, {
-            backgroundColor: 0x1099bb
-          });
-          
-          if (!app) {
-            console.error('PixiHelper.initApp returned null');
-            console.groupEnd();
-            return false;
-          }
-          
-          console.log('PixiHelper created app successfully');
-          console.log('Renderer type:', app.renderer ? app.renderer.type : 'unknown');
-          
-          // Clean up
-          if (typeof app.destroy === 'function') {
-            app.destroy();
-          } else if (app.renderer && typeof app.renderer.destroy === 'function') {
-            app.renderer.destroy();
-          }
-          
-          console.log('Cleanup completed');
-          console.groupEnd();
-          return true;
-        } catch (error) {
-          console.error('Error in PixiHelper test:', error);
-          console.groupEnd();
-          return false;
-        }
-      },
-      
-      // Run all PIXI tests
+      // Run all Canvas tests
       runTests: function() {
-        console.group('PIXI Debug Tests');
+        console.group('Canvas Debug Tests');
         const initResult = this.testInit();
-        const rendererResult = this.testRenderer();
-        const helperResult = this.testPixiHelper();
+        const drawingResult = this.testDrawing();
         
         console.log('Tests results:');
         console.log('- Initialization:', initResult ? '✅ PASSED' : '❌ FAILED');
-        console.log('- Renderer:', rendererResult ? '✅ PASSED' : '❌ FAILED');
-        console.log('- PixiHelper:', helperResult ? '✅ PASSED' : '❌ FAILED');
+        console.log('- Drawing:', drawingResult ? '✅ PASSED' : '❌ FAILED');
         console.groupEnd();
         
         window.showStatusMessage(
-          `PIXI Tests: ${initResult && rendererResult && helperResult ? 'All Passed' : 'Some Failed'}`, 
-          !(initResult && rendererResult && helperResult)
+          `Canvas Tests: ${initResult && drawingResult ? 'All Passed' : 'Some Failed'}`, 
+          !(initResult && drawingResult)
         );
         
         return {
           initialization: initResult,
-          renderer: rendererResult,
-          helper: helperResult,
-          allPassed: initResult && rendererResult && helperResult
+          drawing: drawingResult,
+          allPassed: initResult && drawingResult
         };
       }
     },
@@ -414,12 +356,12 @@
       window.debug.analyzeFramework();
     }, 2000);
     
-    // Connect PIXI debug button
+    // Connect Canvas debug button
     const debugButton = document.getElementById('debug-button');
     if (debugButton) {
       debugButton.addEventListener('click', function() {
-        // Run PIXI tests
-        window.debug.pixi.runTests();
+        // Run Canvas tests
+        window.debug.canvas.runTests();
         // After tests, show framework analysis
         window.debug.analyzeFramework();
       });

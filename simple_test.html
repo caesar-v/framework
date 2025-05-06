@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Framework Simple Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .hidden {
+      display: none;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+    .test-container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    button {
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #385c89;
+    }
+    .success {
+      color: #2ecc71;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    pre {
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Framework Tests</h1>
+  
+  <div class="test-container">
+    <h2>Test Elements</h2>
+    <div id="test-elements">
+      <canvas id="game-canvas" width="800" height="600"></canvas>
+      <div class="game-container pc" id="game-container"></div>
+      <div class="playground-zone"></div>
+      
+      <!-- Form Elements -->
+      <input type="text" id="bet-input" value="10">
+      <button id="spin-button">SPIN</button>
+      <button id="increase-bet">+</button>
+      <button id="decrease-bet">-</button>
+      <select id="theme-select">
+        <option value="default">Default</option>
+        <option value="pirate">Pirate</option>
+        <option value="neon">Neon</option>
+      </select>
+      <div id="settings-panel" class="hidden"></div>
+      <button id="settings-button">Settings</button>
+      <button id="sound-button">Sound</button>
+      <button id="menu-button">Menu</button>
+      <div id="menu-overlay" class="hidden"></div>
+      <button id="close-menu">Close</button>
+      <button id="close-settings">Close</button>
+      <button id="manual-tab">Manual</button>
+      <button id="auto-tab">Auto</button>
+      <button id="half-bet">1/2</button>
+      <button id="double-bet">×2</button>
+      <button id="max-bet">Max</button>
+      <select id="risk-level">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+      <span id="balance-display">1000.00</span>
+      <span id="potential-win">30.00</span>
+      <span id="current-time">00:00:00</span>
+      
+      <!-- Popup Tabs -->
+      <div id="popup-tabs">
+        <div class="popup-tab" data-tab="rules">Rules</div>
+        <div class="popup-tab" data-tab="paytable">Paytable</div>
+        <div class="popup-tab" data-tab="settings">Settings</div>
+        <div class="popup-tab" data-tab="fairness">Fairness</div>
+      </div>
+      
+      <!-- Tab Contents -->
+      <div id="tab-contents">
+        <div id="rules-tab" class="tab-content">Rules Content</div>
+        <div id="paytable-tab" class="tab-content">Paytable Content</div>
+        <div id="settings-tab" class="tab-content">Settings Content</div>
+        <div id="fairness-tab" class="tab-content">Fairness Content</div>
+      </div>
+      
+      <!-- Quick Bets -->
+      <div id="quick-bets">
+        <button class="quick-bet" data-bet="10">10</button>
+        <button class="quick-bet" data-bet="20">20</button>
+        <button class="quick-bet" data-bet="50">50</button>
+        <button class="quick-bet" data-bet="100">100</button>
+      </div>
+      
+      <!-- Chat Panel -->
+      <button id="chat-header-button">Chat</button>
+      <button id="close-chat">Close Chat</button>
+      <iframe id="watchers-chat" src="about:blank"></iframe>
+    </div>
+  </div>
+  
+  <div class="test-container">
+    <h2>Run Tests</h2>
+    <button id="run-all">Run All Tests</button>
+    <button id="run-game-state-test">GameStateManager</button>
+    <button id="run-inheritance-test">Inheritance</button>
+    <button id="run-ui-test">UI Manager</button>
+    <button id="run-canvas-test">Canvas Manager</button>
+    <button id="run-module-test">Module Loading</button>
+  </div>
+  
+  <div class="test-container">
+    <h2>Test Results</h2>
+    <div id="test-results"></div>
+  </div>
+  
+  <!-- Load utility modules first -->
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/animation.js"></script>
+  
+  <!-- Load core modules in order -->
+  <script src="js/core/CanvasManager.js"></script>
+  <script src="js/core/UIManager.js"></script>
+  <script src="js/core/GameStateManager.js"></script>
+  <script src="js/core/gameFramework.js"></script>
+  
+  <!-- Load the module index to provide initialization helpers -->
+  <script src="js/core/index.js"></script>
+  
+  <!-- Load the Abstract Base Game first -->
+  <script src="games/AbstractBaseGame.js"></script>
+  
+  <!-- Base game must be loaded before game implementations -->
+  <script src="games/baseGame.js"></script>
+  
+  <!-- Game loader - depends on all game classes -->
+  <script src="js/core/gameLoader.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Reference to results div
+      const resultsDiv = document.getElementById('test-results');
+      
+      // Function to run a test
+      function runTest(testFile) {
+        return new Promise((resolve) => {
+          // Clear previous error markers
+          document.querySelectorAll('.test-error-marker').forEach(el => {
+            el.remove();
+          });
+          
+          console.clear();
+          console.log(`🧪 Running test: ${testFile}`);
+          
+          // Create script element
+          const script = document.createElement('script');
+          script.src = testFile;
+          
+          // Set timeout for test
+          const timeoutId = setTimeout(() => {
+            console.error(`Test ${testFile} timed out after 5 seconds`);
+            logResult(testFile, false, 'Test timed out after 5 seconds');
+            resolve(false);
+          }, 5000);
+          
+          // Handle script load
+          script.onload = () => {
+            clearTimeout(timeoutId);
+            
+            // Check if any error markers were created
+            const testName = testFile.split('/').pop().replace('.js', '');
+            const errorMarker = document.querySelector(`.test-error-${testName}`);
+            
+            if (errorMarker) {
+              logResult(testFile, false, 'Test failed - see console for details');
+              resolve(false);
+            } else {
+              logResult(testFile, true, 'Test passed successfully');
+              resolve(true);
+            }
+          };
+          
+          // Handle load error
+          script.onerror = (error) => {
+            clearTimeout(timeoutId);
+            logResult(testFile, false, `Failed to load test script: ${error.message || 'Unknown error'}`);
+            resolve(false);
+          };
+          
+          // Add script to DOM
+          document.body.appendChild(script);
+        });
+      }
+      
+      // Function to log result to page
+      function logResult(testFile, success, message) {
+        const testName = testFile.split('/').pop().replace('.js', '');
+        
+        // Create result element
+        const resultElement = document.createElement('div');
+        resultElement.style.marginBottom = '10px';
+        resultElement.style.padding = '10px';
+        resultElement.style.borderRadius = '4px';
+        resultElement.style.backgroundColor = success ? '#e6ffec' : '#ffefef';
+        resultElement.style.borderLeft = success ? '4px solid #2ecc71' : '4px solid #e74c3c';
+        
+        // Add content
+        resultElement.innerHTML = `
+          <h3>${testName}</h3>
+          <p class="${success ? 'success' : 'error'}">${success ? '✓ ' : '✗ '}${message}</p>
+        `;
+        
+        // Add to results
+        resultsDiv.appendChild(resultElement);
+      }
+      
+      // Run all tests sequentially
+      async function runAllTests() {
+        resultsDiv.innerHTML = '<p>Running tests...</p>';
+        
+        const tests = [
+          'js/moduleLoadTest.js',
+          'js/canvasTest.js',
+          'js/uiTest.js',
+          'js/inheritanceTest.js',
+          'js/gameStateTest.js'
+        ];
+        
+        resultsDiv.innerHTML = '';
+        
+        for (const test of tests) {
+          await runTest(test);
+        }
+      }
+      
+      // Set up button event listeners
+      document.getElementById('run-all').addEventListener('click', runAllTests);
+      document.getElementById('run-game-state-test').addEventListener('click', () => runTest('js/gameStateTest.js'));
+      document.getElementById('run-inheritance-test').addEventListener('click', () => runTest('js/inheritanceTest.js'));
+      document.getElementById('run-ui-test').addEventListener('click', () => runTest('js/uiTest.js'));
+      document.getElementById('run-canvas-test').addEventListener('click', () => runTest('js/canvasTest.js'));
+      document.getElementById('run-module-test').addEventListener('click', () => runTest('js/moduleLoadTest.js'));
+    });
+  </script>
+</body>
+</html>
