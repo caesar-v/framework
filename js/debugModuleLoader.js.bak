@@ -21,18 +21,12 @@
       // Store original setAttribute method
       const originalSetAttribute = element.setAttribute;
       
-      // Override setAttribute to catch type="module" settings
+      // Override setAttribute to track module settings but allow them
       element.setAttribute = function(name, value) {
         if (name.toLowerCase() === 'type' && value === 'module') {
-          console.warn('Module Loader Debug: Detected type="module" attribute being set', {
-            element: this,
-            stack: new Error().stack
+          console.log('Module Loader Debug: Detected ES module script - allowing it', {
+            element: this
           });
-          
-          // Instead of setting type="module", force it to be a regular script
-          // This prevents module loading errors when the server isn't configured for modules
-          console.log('Module Loader Debug: Preventing module script loading, using regular script instead');
-          return originalSetAttribute.call(this, 'type', 'text/javascript');
         }
         
         return originalSetAttribute.call(this, name, value);

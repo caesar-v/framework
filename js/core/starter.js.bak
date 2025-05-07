@@ -1,0 +1,806 @@
+/**
+ * Framework Starter - Simple, effective game framework initialization
+ * 
+ * This module provides a clean, reliable way to initialize the game framework.
+ * Completely rewritten to be simpler, more robust, and compatible with our new architecture.
+ */
+
+(function() {
+  console.log('Framework Starter: Loading...');
+  
+  // Configuration for the starter
+  const config = {
+    // Default game to load if none specified
+    defaultGame: 'dice',
+    
+    // Fallback games in priority order
+    fallbackGames: ['dice', 'card', 'diceGame', 'cardGame'],
+    
+    // Maximum initialization attempts
+    maxAttempts: 3,
+    
+    // Timeouts in milliseconds
+    timeouts: {
+      import: 3000,     // Module import timeout
+      init: 2000,       // Initialization timeout
+      gameLoad: 3000,   // Game loading timeout
+      recovery: 1000    // Time between recovery attempts
+    },
+    
+    // Manifest paths for GameAPI
+    manifestPaths: [
+      '../../games/manifests/dice-game.json',
+      '../../games/manifests/card-game.json'
+    ]
+  };
+  
+  // Track initialization state
+  const state = {
+    initialized: false,
+    initializing: false,
+    startTime: null,
+    attempts: 0,
+    lastError: null,
+    activeGame: null,
+    domLoaded: document.readyState !== 'loading'
+  };
+  
+  /**
+   * Main starter function - centralized async initialization
+   * @returns {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function start() {
+    // Check if already initialized or initializing
+    if (state.initialized) {
+      console.log('Framework Starter: Already initialized');
+      return true;
+    }
+    
+    if (state.initializing) {
+      console.log('Framework Starter: Already initializing, waiting...');
+      return new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+          if (!state.initializing) {
+            clearInterval(checkInterval);
+            resolve(state.initialized);
+          }
+        }, 100);
+      });
+    }
+    
+    // Mark as initializing and record start time
+    state.initializing = true;
+    state.startTime = Date.now();
+    state.attempts++;
+    
+    console.log(`Framework Starter: Starting initialization (attempt ${state.attempts})`);
+    
+    try {
+      // Step 1: Check if we already have an initialized game
+      if (checkExistingGame()) {
+        console.log('Framework Starter: Found existing initialized game');
+        finishInitialization(true);
+        return true;
+      }
+      
+      // Step 2: Ensure required global objects exist
+      if (!ensureGlobals()) {
+        console.warn('Framework Starter: Some required globals are missing');
+        // Continue anyway as we have fallbacks
+      }
+      
+      // Step 3: Try to initialize using GameAPI (modern approach)
+      try {
+        const apiSuccess = await initWithGameAPI();
+        if (apiSuccess) {
+          console.log('Framework Starter: Successfully initialized using GameAPI');
+          finishInitialization(true);
+          return true;
+        }
+      } catch (apiError) {
+        console.warn('Framework Starter: GameAPI initialization failed, falling back to legacy approach', apiError);
+      }
+      
+      // Step 4: Try to initialize using GameLoader (legacy approach)
+      try {
+        const loaderSuccess = await initWithGameLoader();
+        if (loaderSuccess) {
+          console.log('Framework Starter: Successfully initialized using GameLoader');
+          finishInitialization(true);
+          return true;
+        }
+      } catch (loaderError) {
+        console.warn('Framework Starter: GameLoader initialization failed', loaderError);
+      }
+      
+      // Step 5: Try direct GameFramework initialization (simplest approach)
+      try {
+        const frameworkSuccess = await initWithGameFramework();
+        if (frameworkSuccess) {
+          console.log('Framework Starter: Successfully initialized using direct GameFramework');
+          finishInitialization(true);
+          return true;
+        }
+      } catch (frameworkError) {
+        console.warn('Framework Starter: Direct GameFramework initialization failed', frameworkError);
+      }
+      
+      // If we got here, all approaches failed
+      console.error('Framework Starter: All initialization approaches failed');
+      state.lastError = new Error('All initialization approaches failed');
+      finishInitialization(false);
+      return false;
+    } catch (error) {
+      // Handle unexpected errors
+      console.error('Framework Starter: Fatal error during initialization:', error);
+      state.lastError = error;
+      finishInitialization(false);
+      return false;
+    }
+  }
+  
+  /**
+   * Finalize initialization state
+   * @param {boolean} success - Whether initialization was successful
+   */
+  function finishInitialization(success) {
+    state.initialized = success;
+    state.initializing = false;
+    const duration = Date.now() - state.startTime;
+    console.log(`Framework Starter: Initialization ${success ? 'succeeded' : 'failed'} in ${duration}ms`);
+  }
+  
+  /**
+   * Check if a game is already initialized
+   * @returns {boolean} True if a game is already initialized
+   */
+  function checkExistingGame() {
+    // Check GameAPI (modern approach)
+    if (window.gameAPI && window.gameAPI.activeGame) {
+      state.activeGame = window.gameAPI.activeGame;
+      return true;
+    }
+    
+    // Check GameLoader (legacy approach)
+    if (window.gameLoader && window.gameLoader.activeGame) {
+      state.activeGame = window.gameLoader.activeGame;
+      return true;
+    }
+    
+    // Check GameInitializer (alternate approach)
+    if (window.gameInitializer && 
+        typeof window.gameInitializer.checkStatus === 'function' && 
+        window.gameInitializer.checkStatus()) {
+      state.activeGame = window.gameInitializer.getActiveGame?.() || true;
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Ensure all required global objects exist
+   * @returns {boolean} True if all necessary globals exist
+   */
+  function ensureGlobals() {
+    // Object to track missing globals
+    const missing = [];
+    
+    // Check essential items
+    if (typeof window.GameConfig === 'undefined') missing.push('GameConfig');
+    if (typeof window.GameFramework === 'undefined') missing.push('GameFramework');
+    
+    // Log missing globals but don't fail initialization
+    if (missing.length > 0) {
+      console.warn('Framework Starter: Missing globals:', missing.join(', '));
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Initialize using GameAPI (modern approach)
+   * @returns {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function initWithGameAPI() {
+    console.log('Framework Starter: Trying GameAPI initialization');
+    
+    // Import modules if they don't exist
+    if (typeof window.gameAPI === 'undefined') {
+      try {
+        // Import with timeout
+        await Promise.race([
+          importGameAPI(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('GameAPI import timeout')), config.timeouts.import)
+          )
+        ]);
+      } catch (importError) {
+        console.warn('Framework Starter: Failed to import GameAPI:', importError);
+        return false;
+      }
+    }
+    
+    // Check if GameAPI is now available
+    if (typeof window.gameAPI === 'undefined') {
+      console.warn('Framework Starter: GameAPI not available after import');
+      return false;
+    }
+    
+    // Initialize GameAPI if needed
+    if (!window.gameAPI.initialized) {
+      try {
+        // Initialize with timeout
+        await Promise.race([
+          window.gameAPI.initialize(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('GameAPI initialization timeout')), config.timeouts.init)
+          )
+        ]);
+      } catch (initError) {
+        console.warn('Framework Starter: Failed to initialize GameAPI:', initError);
+        return false;
+      }
+    }
+    
+    // Load default game
+    try {
+      const gameId = getDefaultGameId();
+      
+      // Load game with timeout
+      await Promise.race([
+        window.gameAPI.loadGame(gameId),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error(`Loading game ${gameId} timed out`)), config.timeouts.gameLoad)
+        )
+      ]);
+      
+      // Check if game was loaded successfully
+      if (window.gameAPI.activeGame) {
+        state.activeGame = window.gameAPI.activeGame;
+        return true;
+      }
+      
+      // Try fallback games
+      for (const fallbackId of config.fallbackGames) {
+        if (fallbackId === gameId) continue; // Skip already tried game
+        
+        try {
+          console.log(`Framework Starter: Trying fallback game: ${fallbackId}`);
+          await window.gameAPI.loadGame(fallbackId);
+          
+          if (window.gameAPI.activeGame) {
+            state.activeGame = window.gameAPI.activeGame;
+            return true;
+          }
+        } catch (fallbackError) {
+          console.warn(`Framework Starter: Failed to load fallback game ${fallbackId}:`, fallbackError);
+        }
+      }
+    } catch (loadError) {
+      console.warn('Framework Starter: Failed to load game with GameAPI:', loadError);
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Import GameAPI modules
+   * @returns {Promise<void>} Promise resolving when import is complete
+   */
+  async function importGameAPI() {
+    try {
+      // Import required modules
+      const [GameAPIModule, RegistryAdapterModule] = await Promise.all([
+        import('../../api/core/GameAPI.js'),
+        import('../../api/core/registryAdapter.js').catch(err => {
+          console.warn('Framework Starter: Failed to import registryAdapter:', err);
+          return { default: null };
+        })
+      ]);
+      
+      // Initialize GameAPI
+      if (GameAPIModule && GameAPIModule.default) {
+        const GameAPI = GameAPIModule.default;
+        
+        if (RegistryAdapterModule && RegistryAdapterModule.default) {
+          window.EnhancedGameRegistry = RegistryAdapterModule.default;
+        }
+        
+        // Create GameAPI instance
+        window.gameAPI = new GameAPI({
+          automaticInitialization: false,
+          loadManifestsOnStart: true,
+          multiLevelErrorRecovery: true,
+          manifestPaths: config.manifestPaths
+        });
+        
+        console.log('Framework Starter: GameAPI imported and instantiated');
+      } else {
+        throw new Error('GameAPI module not properly loaded');
+      }
+    } catch (error) {
+      console.error('Framework Starter: Failed to import GameAPI modules:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Initialize using GameLoader (legacy approach)
+   * @returns {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function initWithGameLoader() {
+    console.log('Framework Starter: Trying GameLoader initialization');
+    
+    // Create GameLoader instance if it doesn't exist
+    if (typeof window.gameLoader === 'undefined') {
+      if (typeof GameLoader !== 'function') {
+        console.warn('Framework Starter: GameLoader constructor not available');
+        return false;
+      }
+      
+      try {
+        window.gameLoader = new GameLoader();
+        console.log('Framework Starter: Created new GameLoader instance');
+      } catch (error) {
+        console.error('Framework Starter: Failed to create GameLoader:', error);
+        return false;
+      }
+    }
+    
+    // Reset any loading flags to ensure clean state
+    resetGameLoaderFlags();
+    
+    // Try to load the default game
+    const gameType = getDefaultGameId();
+    
+    try {
+      // Create a promise for game creation with timeout
+      const loadSuccess = await Promise.race([
+        new Promise(resolve => {
+          try {
+            // Force create new game
+            window.gameLoader.forceCreateNewGame(gameType);
+            
+            // Check if game was created after a delay
+            setTimeout(() => {
+              resolve(!!window.gameLoader.activeGame);
+            }, 800);
+          } catch (error) {
+            console.error(`Framework Starter: Error creating game ${gameType}:`, error);
+            resolve(false);
+          }
+        }),
+        new Promise(resolve => 
+          setTimeout(() => {
+            console.warn(`Framework Starter: Game creation timed out for ${gameType}`);
+            resolve(false);
+          }, config.timeouts.gameLoad)
+        )
+      ]);
+      
+      // If game was loaded successfully, return true
+      if (loadSuccess) {
+        state.activeGame = window.gameLoader.activeGame;
+        return true;
+      }
+      
+      // Try fallback games
+      for (const fallbackId of config.fallbackGames) {
+        if (fallbackId === gameType) continue; // Skip already tried game
+        
+        try {
+          console.log(`Framework Starter: Trying fallback game: ${fallbackId}`);
+          
+          // Reset flags before trying
+          resetGameLoaderFlags();
+          
+          const fallbackSuccess = await Promise.race([
+            new Promise(resolve => {
+              try {
+                window.gameLoader.forceCreateNewGame(fallbackId);
+                setTimeout(() => {
+                  resolve(!!window.gameLoader.activeGame);
+                }, 800);
+              } catch (error) {
+                console.error(`Framework Starter: Error creating fallback game ${fallbackId}:`, error);
+                resolve(false);
+              }
+            }),
+            new Promise(resolve => 
+              setTimeout(() => {
+                console.warn(`Framework Starter: Fallback game creation timed out for ${fallbackId}`);
+                resolve(false);
+              }, config.timeouts.gameLoad)
+            )
+          ]);
+          
+          if (fallbackSuccess) {
+            state.activeGame = window.gameLoader.activeGame;
+            return true;
+          }
+        } catch (fallbackError) {
+          console.warn(`Framework Starter: Failed to load fallback game ${fallbackId}:`, fallbackError);
+        }
+      }
+    } catch (error) {
+      console.error(`Framework Starter: Failed to load game ${gameType}:`, error);
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Reset GameLoader flags to ensure clean state
+   */
+  function resetGameLoaderFlags() {
+    if (!window.gameLoader) return;
+    
+    // Reset flags
+    if (typeof window.gameLoader.resetGameLoaderFlags === 'function') {
+      window.gameLoader.resetGameLoaderFlags();
+    } else {
+      // Manual flag reset
+      window.gameLoader._creatingGame = false;
+      window.gameLoader._loadingGame = false;
+      window.gameLoader._loadingGameTest = false;
+      window.gameLoader._loadingInProgress = null;
+    }
+  }
+  
+  /**
+   * Initialize using direct GameFramework (simplest approach)
+   * @returns {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function initWithGameFramework() {
+    console.log('Framework Starter: Trying direct GameFramework initialization');
+    
+    // Check if GameFramework is available
+    if (typeof GameFramework !== 'function') {
+      console.warn('Framework Starter: GameFramework constructor not available');
+      return false;
+    }
+    
+    try {
+      // Create new GameFramework instance
+      window.gameFramework = new GameFramework({
+        gameTitle: getGameTitle(),
+        initialBalance: getInitialBalance(),
+        containerSelector: '#game-container'
+      });
+      
+      console.log('Framework Starter: Created new GameFramework instance');
+      
+      // Wait a moment for it to initialize
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update state
+      state.activeGame = window.gameFramework;
+      
+      return true;
+    } catch (error) {
+      console.error('Framework Starter: Failed to create GameFramework:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Get default game ID from DOM or config
+   * @returns {string} The default game ID
+   */
+  function getDefaultGameId() {
+    // First try game selector element
+    const gameSelector = document.getElementById('game-select');
+    if (gameSelector) {
+      if (gameSelector.value) {
+        return gameSelector.value;
+      }
+      
+      if (gameSelector.getAttribute('data-default')) {
+        return gameSelector.getAttribute('data-default');
+      }
+      
+      if (gameSelector.options && gameSelector.options.length > 0) {
+        return gameSelector.options[0].value;
+      }
+    }
+    
+    // Fallback to config default
+    return config.defaultGame;
+  }
+  
+  /**
+   * Get game title from GameConfig or default
+   * @returns {string} The game title
+   */
+  function getGameTitle() {
+    const gameId = getDefaultGameId();
+    
+    // Try to get from GameConfig
+    if (window.GameConfig) {
+      if (window.GameConfig.games && window.GameConfig.games[gameId]) {
+        return window.GameConfig.games[gameId].name || 'Game Prototype';
+      }
+    }
+    
+    // Fallback to capitalized game ID
+    return gameId.charAt(0).toUpperCase() + gameId.slice(1) + ' Game';
+  }
+  
+  /**
+   * Get initial balance from GameConfig or default
+   * @returns {number} The initial balance
+   */
+  function getInitialBalance() {
+    if (window.GameConfig && window.GameConfig.defaults) {
+      return window.GameConfig.defaults.initialBalance || 1000;
+    }
+    
+    return 1000;
+  }
+  
+  /**
+   * Emergency recovery function for crash recovery
+   * @returns {Promise<boolean>} Promise resolving to true if recovery succeeded
+   */
+  async function emergencyRecovery() {
+    console.log('Framework Starter: Emergency recovery started');
+    
+    try {
+      // First try gameInitializer if available
+      if (window.gameInitializer && typeof window.gameInitializer.emergencyRecovery === 'function') {
+        console.log('Framework Starter: Using gameInitializer.emergencyRecovery');
+        
+        try {
+          const initializerRecovery = await window.gameInitializer.emergencyRecovery();
+          if (initializerRecovery && initializerRecovery.success) {
+            console.log('Framework Starter: gameInitializer recovery succeeded');
+            return true;
+          }
+        } catch (initializerError) {
+          console.warn('Framework Starter: gameInitializer recovery failed:', initializerError);
+        }
+      }
+      
+      // If we have domReadyLoader, try its recovery
+      if (window.domReadyLoader && typeof window.domReadyLoader.recover === 'function') {
+        console.log('Framework Starter: Using domReadyLoader.recover');
+        
+        try {
+          const loaderRecovery = await window.domReadyLoader.recover();
+          if (loaderRecovery) {
+            console.log('Framework Starter: domReadyLoader recovery succeeded');
+            return true;
+          }
+        } catch (loaderError) {
+          console.warn('Framework Starter: domReadyLoader recovery failed:', loaderError);
+        }
+      }
+      
+      // Attempt our own multi-step recovery
+      console.log('Framework Starter: Attempting our own recovery process');
+      
+      // Reset global state
+      resetGlobalState();
+      
+      // Try simplest approach first - direct GameFramework
+      try {
+        const frameworkSuccess = await initWithGameFramework();
+        if (frameworkSuccess) {
+          console.log('Framework Starter: Recovery successful with direct GameFramework');
+          return true;
+        }
+      } catch (frameworkError) {
+        console.warn('Framework Starter: Recovery with GameFramework failed:', frameworkError);
+      }
+      
+      // Wait a moment between attempts
+      await new Promise(resolve => setTimeout(resolve, config.timeouts.recovery));
+      
+      // Try GameLoader next
+      try {
+        const loaderSuccess = await initWithGameLoader();
+        if (loaderSuccess) {
+          console.log('Framework Starter: Recovery successful with GameLoader');
+          return true;
+        }
+      } catch (loaderError) {
+        console.warn('Framework Starter: Recovery with GameLoader failed:', loaderError);
+      }
+      
+      // Wait a moment between attempts
+      await new Promise(resolve => setTimeout(resolve, config.timeouts.recovery));
+      
+      // Try GameAPI as last resort
+      try {
+        const apiSuccess = await initWithGameAPI();
+        if (apiSuccess) {
+          console.log('Framework Starter: Recovery successful with GameAPI');
+          return true;
+        }
+      } catch (apiError) {
+        console.warn('Framework Starter: Recovery with GameAPI failed:', apiError);
+      }
+      
+      // All recovery attempts failed
+      console.error('Framework Starter: All recovery attempts failed');
+      return false;
+    } catch (error) {
+      console.error('Framework Starter: Fatal error during emergency recovery:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Reset global state to clean slate for recovery
+   */
+  function resetGlobalState() {
+    // Reset GameLoader
+    if (window.gameLoader) {
+      if (window.gameLoader.activeGame) {
+        window.gameLoader.activeGame = null;
+      }
+      
+      resetGameLoaderFlags();
+    }
+    
+    // Reset GameAPI
+    if (window.gameAPI) {
+      if (window.gameAPI.activeGame) {
+        window.gameAPI.activeGame = null;
+      }
+      
+      if (window.gameAPI._gameLoading) {
+        window.gameAPI._gameLoading = false;
+      }
+    }
+    
+    // Reset GameFramework
+    if (window.gameFramework) {
+      try {
+        if (typeof window.gameFramework.cleanup === 'function') {
+          window.gameFramework.cleanup();
+        }
+      } catch (error) {
+        console.warn('Framework Starter: Error cleaning up GameFramework:', error);
+      }
+    }
+    
+    // Reset our own state
+    state.initialized = false;
+    state.initializing = false;
+    state.activeGame = null;
+  }
+  
+  /**
+   * Get current status information
+   * @returns {Object} Current status information
+   */
+  function getStatus() {
+    return {
+      initialized: state.initialized,
+      initializing: state.initializing,
+      attempts: state.attempts,
+      activeGame: !!state.activeGame,
+      activeGameType: getActiveGameType(),
+      domReady: state.domLoaded,
+      timeElapsed: state.startTime ? Date.now() - state.startTime : 0,
+      api: {
+        available: !!window.gameAPI,
+        initialized: window.gameAPI ? !!window.gameAPI.initialized : false,
+        hasActiveGame: window.gameAPI ? !!window.gameAPI.activeGame : false
+      },
+      loader: {
+        available: !!window.gameLoader,
+        hasActiveGame: window.gameLoader ? !!window.gameLoader.activeGame : false
+      },
+      framework: {
+        available: !!window.GameFramework,
+        instance: !!window.gameFramework
+      }
+    };
+  }
+  
+  /**
+   * Get active game type/ID
+   * @returns {string|null} Active game type or null if no active game
+   */
+  function getActiveGameType() {
+    if (!state.activeGame) return null;
+    
+    // Try to get game type from GameAPI
+    if (window.gameAPI && window.gameAPI.activeGame) {
+      return window.gameAPI.activeGame.id || 'unknown';
+    }
+    
+    // Try to get game type from GameLoader
+    if (window.gameLoader && window.gameLoader.activeGame) {
+      if (typeof window.gameLoader.getGameTypeFromInstance === 'function') {
+        return window.gameLoader.getGameTypeFromInstance(window.gameLoader.activeGame);
+      }
+      
+      // Try to infer from class name
+      const gameInstance = window.gameLoader.activeGame.game || window.gameLoader.activeGame;
+      if (gameInstance && gameInstance.constructor) {
+        const className = gameInstance.constructor.name;
+        if (className.endsWith('Game')) {
+          return className.slice(0, -4).toLowerCase();
+        }
+        return className.toLowerCase();
+      }
+    }
+    
+    return 'unknown';
+  }
+  
+  // Handle DOM ready state
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      state.domLoaded = true;
+      
+      // If not initialized yet, try again
+      if (!state.initialized && !state.initializing) {
+        console.log('Framework Starter: DOM loaded, attempting initialization');
+        start().catch(error => {
+          console.error('Framework Starter: Error during DOM ready initialization:', error);
+        });
+      }
+    });
+  } else {
+    state.domLoaded = true;
+  }
+  
+  // Handle visibility change
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      console.log('Framework Starter: Page became visible, checking initialization status');
+      
+      // Check if initialization needed
+      if (!state.initialized && !state.initializing) {
+        console.log('Framework Starter: Framework not initialized, attempting initialization');
+        start().catch(error => {
+          console.error('Framework Starter: Error during visibility change initialization:', error);
+        });
+      }
+      
+      // Check if active game is still valid
+      if (state.initialized && !checkExistingGame()) {
+        console.warn('Framework Starter: Active game lost, attempting recovery');
+        state.initialized = false;
+        start().catch(error => {
+          console.error('Framework Starter: Error during active game recovery:', error);
+        });
+      }
+    }
+  });
+  
+  // Export the frameworkStarter interface
+  window.frameworkStarter = {
+    // Core methods
+    start: start,
+    emergencyRecovery: emergencyRecovery,
+    
+    // Game initialization methods
+    initWithGameAPI: initWithGameAPI,
+    initWithGameLoader: initWithGameLoader,
+    initWithGameFramework: initWithGameFramework,
+    
+    // Utility methods
+    resetGameLoaderFlags: resetGameLoaderFlags,
+    resetGlobalState: resetGlobalState,
+    
+    // Status methods
+    getStatus: getStatus,
+    getActiveGameType: getActiveGameType,
+    checkExistingGame: checkExistingGame
+  };
+  
+  // Start initialization immediately
+  console.log('Framework Starter: Starting automatic initialization');
+  start().catch(error => {
+    console.error('Framework Starter: Error during automatic initialization:', error);
+  });
+  
+  console.log('Framework Starter: Module loaded');
+})();

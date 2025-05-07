@@ -1,0 +1,339 @@
+/**
+ * DOM Ready Loader - Ensures core framework components are loaded after DOM is ready
+ * This script fixes initialization timing issues between the DOM and framework components
+ */
+
+(function() {
+  console.log('DOM Ready Loader: Initializing');
+  
+  // Track loaded status
+  const moduleStatus = {
+    config: false,
+    helpers: false,
+    canvasManager: false,
+    uiManager: false,
+    gameStateManager: false,
+    gameFramework: false,
+    gameLoader: false,
+    starter: false
+  };
+  
+  // Check if object exists in global scope
+  const checkModule = (name, globalName) => {
+    return typeof window[globalName] !== 'undefined';
+  };
+  
+  // Load a script and update status
+  const loadScript = (src, moduleName, globalName) => {
+    return new Promise((resolve, reject) => {
+      if (checkModule(moduleName, globalName)) {
+        console.log(`DOM Ready Loader: ${moduleName} already loaded`);
+        moduleStatus[moduleName] = true;
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = src;
+      
+      // Set up a timeout to prevent hanging on script load
+      const timeoutId = setTimeout(() => {
+        console.error(`DOM Ready Loader: Loading ${moduleName} timed out after 10 seconds`);
+        // We'll resolve instead of reject to continue loading other modules
+        // This allows partial initialization even if some modules fail
+        moduleStatus[moduleName] = false;
+        resolve();
+      }, 10000);
+      
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        console.log(`DOM Ready Loader: Loaded ${moduleName}`);
+        
+        // Double-check that the global is actually available
+        if (checkModule(moduleName, globalName)) {
+          moduleStatus[moduleName] = true;
+          resolve();
+        } else {
+          console.warn(`DOM Ready Loader: ${moduleName} loaded but ${globalName} is not defined`);
+          moduleStatus[moduleName] = false;
+          resolve(); // Still resolve but with a warning
+        }
+      };
+      
+      script.onerror = (error) => {
+        clearTimeout(timeoutId);
+        console.error(`DOM Ready Loader: Failed to load ${moduleName}:`, error);
+        
+        // Instead of rejecting, we mark as failed but continue
+        moduleStatus[moduleName] = false;
+        resolve();
+      };
+      
+      document.head.appendChild(script);
+    });
+  };
+  
+  // Load all core scripts in correct order
+  const loadCoreFramework = async () => {
+    try {
+      console.log('DOM Ready Loader: Starting to load core scripts');
+      let allSuccessful = true;
+      
+      // First tier - config and utilities
+      console.log('DOM Ready Loader: Loading tier 1 - config and utilities');
+      
+      // Check if GameConfig is already defined
+      if (typeof window.GameConfig === 'undefined') {
+        await loadScript('js/config.js', 'config', 'GameConfig');
+      } else {
+        console.log('DOM Ready Loader: GameConfig already loaded, skipping');
+        moduleStatus.config = true;
+      }
+      
+      // Check if Helpers is already defined
+      if (typeof window.Helpers === 'undefined') {
+        await loadScript('js/utils/helpers.js', 'helpers', 'Helpers');
+      } else {
+        console.log('DOM Ready Loader: Helpers already loaded, skipping');
+        moduleStatus.helpers = true;
+      }
+      
+      // Check if we can continue to next tier
+      if (!moduleStatus.config || !moduleStatus.helpers) {
+        console.warn('DOM Ready Loader: Basic config or helpers failed to load, continuing with limited functionality');
+        allSuccessful = false;
+      }
+      
+      // Second tier - core managers
+      console.log('DOM Ready Loader: Loading tier 2 - core managers');
+      const managerPromises = [];
+      
+      // Only load managers that aren't already defined
+      if (typeof window.CanvasManager === 'undefined') {
+        managerPromises.push(loadScript('js/core/CanvasManager.js', 'canvasManager', 'CanvasManager'));
+      } else {
+        console.log('DOM Ready Loader: CanvasManager already loaded, skipping');
+        moduleStatus.canvasManager = true;
+      }
+      
+      if (typeof window.UIManager === 'undefined') {
+        managerPromises.push(loadScript('js/core/UIManager.js', 'uiManager', 'UIManager'));
+      } else {
+        console.log('DOM Ready Loader: UIManager already loaded, skipping');
+        moduleStatus.uiManager = true;
+      }
+      
+      if (typeof window.GameStateManager === 'undefined') {
+        managerPromises.push(loadScript('js/core/GameStateManager.js', 'gameStateManager', 'GameStateManager'));
+      } else {
+        console.log('DOM Ready Loader: GameStateManager already loaded, skipping');
+        moduleStatus.gameStateManager = true;
+      }
+      
+      // Only load managers that aren't already defined
+      if (managerPromises.length > 0) {
+        // Load managers in parallel for better performance
+        await Promise.all(managerPromises);
+      }
+      
+      // Check if we can continue to next tier
+      const managersLoaded = moduleStatus.canvasManager && moduleStatus.uiManager && moduleStatus.gameStateManager;
+      if (!managersLoaded) {
+        console.warn('DOM Ready Loader: Some core managers failed to load, continuing with limited functionality');
+        allSuccessful = false;
+      }
+      
+      // Third tier - framework
+      console.log('DOM Ready Loader: Loading tier 3 - game framework');
+      
+      // Check if GameFramework is already defined first to avoid duplicate declarations
+      if (typeof window.GameFramework === 'undefined') {
+        await loadScript('js/core/gameFramework.js', 'gameFramework', 'GameFramework');
+        
+        if (!moduleStatus.gameFramework) {
+          console.error('DOM Ready Loader: Game framework failed to load, game functionality will be limited');
+          allSuccessful = false;
+        }
+      } else {
+        console.log('DOM Ready Loader: GameFramework already loaded, skipping');
+        moduleStatus.gameFramework = true;
+      }
+      
+      // Fourth tier - game loader and starter
+      console.log('DOM Ready Loader: Loading tier 4 - game loader and starter');
+      
+      // Check if GameLoader is already defined
+      if (typeof window.GameLoader === 'undefined') {
+        await loadScript('js/core/gameLoader.js', 'gameLoader', 'GameLoader');
+      } else {
+        console.log('DOM Ready Loader: GameLoader already loaded, skipping');
+        moduleStatus.gameLoader = true;
+      }
+      
+      // Check if frameworkStarter is already defined
+      if (typeof window.frameworkStarter === 'undefined') {
+        await loadScript('js/core/starter.js', 'starter', 'frameworkStarter');
+      } else {
+        console.log('DOM Ready Loader: frameworkStarter already loaded, skipping');
+        moduleStatus.starter = true;
+      }
+      
+      if (!moduleStatus.gameLoader || !moduleStatus.starter) {
+        console.error('DOM Ready Loader: Game loader or starter failed to load, initialization may fail');
+        allSuccessful = false;
+      }
+      
+      // Report overall status
+      if (allSuccessful) {
+        console.log('DOM Ready Loader: All core modules loaded successfully');
+      } else {
+        console.warn('DOM Ready Loader: Some modules failed to load, but continuing with limited functionality');
+      }
+      
+      return allSuccessful;
+    } catch (error) {
+      console.error('DOM Ready Loader: Error loading core framework:', error);
+      return false;
+    }
+  };
+  
+  // Main init function that runs after DOM is ready
+  const init = async () => {
+    console.log('DOM Ready Loader: DOM is ready, loading framework');
+    
+    // Check if game container exists
+    const gameContainer = document.querySelector('#game-container');
+    if (!gameContainer) {
+      console.error('DOM Ready Loader: Game container (#game-container) not found in DOM');
+      return false;
+    }
+    
+    // Check if game canvas exists
+    const gameCanvas = document.querySelector('#game-canvas');
+    if (!gameCanvas) {
+      console.error('DOM Ready Loader: Game canvas (#game-canvas) not found in DOM');
+      return false;
+    }
+    
+    console.log('DOM Ready Loader: Required DOM elements found, loading framework');
+    
+    // Load the core framework modules
+    const success = await loadCoreFramework();
+    
+    // If successful, initialize the framework
+    if (success) {
+      console.log('DOM Ready Loader: Framework loaded, checking for initializer');
+      
+      // Check if gameInitializer is defined and use it
+      if (window.gameInitializer && typeof window.gameInitializer.ensureInitialized === 'function') {
+        console.log('DOM Ready Loader: Using gameInitializer');
+        try {
+          await window.gameInitializer.ensureInitialized();
+        } catch (error) {
+          console.error('DOM Ready Loader: Error using gameInitializer:', error);
+        }
+      }
+      // Otherwise try frameworkStarter
+      else if (window.frameworkStarter && typeof window.frameworkStarter.start === 'function') {
+        console.log('DOM Ready Loader: Using frameworkStarter');
+        try {
+          await window.frameworkStarter.start();
+        } catch (error) {
+          console.error('DOM Ready Loader: Error using frameworkStarter:', error);
+        }
+      }
+      // Last resort: create loader directly
+      else if (typeof GameLoader === 'function' && !window.gameLoader) {
+        console.log('DOM Ready Loader: Creating GameLoader directly');
+        try {
+          window.gameLoader = new GameLoader();
+        } catch (error) {
+          console.error('DOM Ready Loader: Error creating GameLoader:', error);
+        }
+      }
+      
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // Wait for DOM content to be fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    // DOM already loaded, run initialization immediately
+    init().then(success => {
+      console.log(`DOM Ready Loader: Initialization ${success ? 'successful' : 'failed'}`);
+    });
+  }
+  
+  // Export the loader to global scope
+  window.domReadyLoader = {
+    init,
+    status: moduleStatus,
+    loadScript,
+    // Emergency recovery method
+    recover: async () => {
+      console.log('DOM Ready Loader: Running emergency recovery');
+      
+      try {
+        // First, try to reset any existing framework state
+        if (window.gameLoader) {
+          if (window.gameLoader._creatingGame) window.gameLoader._creatingGame = false;
+          if (window.gameLoader._loadingGame) window.gameLoader._loadingGame = false;
+          if (window.gameLoader._loadingGameTest) window.gameLoader._loadingGameTest = false;
+          if (window.gameLoader._loadingInProgress) window.gameLoader._loadingInProgress = null;
+          if (window.gameLoader.activeGame) window.gameLoader.activeGame = null;
+        }
+        
+        // Check if we actually need to reload the framework
+        const allModulesLoaded = moduleStatus.config && 
+                               moduleStatus.helpers && 
+                               moduleStatus.canvasManager && 
+                               moduleStatus.uiManager && 
+                               moduleStatus.gameStateManager && 
+                               moduleStatus.gameFramework && 
+                               moduleStatus.gameLoader && 
+                               moduleStatus.starter;
+        
+        // Only reload if something is missing
+        if (!allModulesLoaded) {
+          console.log('DOM Ready Loader: Some modules are missing, reloading framework');
+          const loaded = await loadCoreFramework();
+          
+          if (!loaded) {
+            console.error('DOM Ready Loader: Failed to load core framework during recovery');
+            return false;
+          }
+          
+          // Give a little time for everything to settle
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+          console.log('DOM Ready Loader: All modules already loaded, skipping reload');
+        }
+        
+        // Try to create a new game instance without recreating GameLoader
+        if (window.GameLoader && !window.gameLoader) {
+          window.gameLoader = new window.GameLoader();
+        }
+        
+        // Try to load default game
+        if (window.gameLoader && typeof window.gameLoader.forceCreateNewGame === 'function') {
+          try {
+            window.gameLoader.forceCreateNewGame('dice');
+            return true;
+          } catch (e) {
+            console.error('DOM Ready Loader: Error creating new game:', e);
+            return false;
+          }
+        }
+        
+        return false;
+      } catch (error) {
+        console.error('DOM Ready Loader: Recovery failed:', error);
+        return false;
+      }
+    }
+  };
+})();

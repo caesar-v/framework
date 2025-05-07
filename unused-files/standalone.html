@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Framework - Standalone</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 20px;
+    }
+    
+    .game-title {
+      margin: 0;
+      color: #58a6ff;
+    }
+    
+    .balance-display {
+      background-color: #161b22;
+      padding: 8px 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .balance-value {
+      font-weight: bold;
+      color: #7ee787;
+    }
+    
+    .game-area {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .betting-zone {
+      flex: 0 0 300px;
+      background-color: #161b22;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    
+    .playground-zone {
+      flex: 1;
+      background-color: #161b22;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    canvas {
+      width: 100%;
+      height: 500px;
+      display: block;
+    }
+    
+    .play-controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .spin-btn {
+      background-color: #238636;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .spin-btn:hover {
+      background-color: #2ea043;
+    }
+    
+    .control-panel {
+      margin-bottom: 20px;
+    }
+    
+    .control-panel-title {
+      color: #8b949e;
+      margin-bottom: 10px;
+      display: block;
+    }
+    
+    .bet-input-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .bet-input {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      background-color: #0d1117;
+      color: white;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+    }
+    
+    .btn {
+      background-color: #30363d;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .quick-bets {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .quick-bet {
+      flex: 1;
+      background-color: #21262d;
+      color: white;
+      border: 1px solid #30363d;
+      padding: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    footer {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+      color: #8b949e;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="game-title">Game Framework</h1>
+      <div class="balance-display">
+        <span>Balance:</span>
+        <span class="balance-value" id="balance-display">1000</span>
+      </div>
+    </header>
+    
+    <div class="game-area">
+      <div class="betting-zone">
+        <div class="control-panel">
+          <span class="control-panel-title">Bet Amount</span>
+          <div class="bet-input-group">
+            <button class="btn" id="decrease-bet">-</button>
+            <input type="text" class="bet-input" id="bet-input" value="10" readonly>
+            <button class="btn" id="increase-bet">+</button>
+          </div>
+          <div class="quick-bets">
+            <button class="quick-bet" id="half-bet">1/2</button>
+            <button class="quick-bet" id="double-bet">×2</button>
+            <button class="quick-bet" id="max-bet">Max</button>
+          </div>
+        </div>
+        
+        <div class="play-controls">
+          <button class="spin-btn" id="spin-button">SPIN</button>
+        </div>
+      </div>
+      
+      <div class="playground-zone">
+        <canvas id="game-canvas"></canvas>
+      </div>
+    </div>
+    
+    <footer>
+      <div>Standalone Mode</div>
+      <div id="current-time">00:00:00</div>
+      <div id="game-name">Dice Game</div>
+    </footer>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Game state
+      const state = {
+        balance: 1000,
+        bet: 10,
+        minBet: 5,
+        maxBet: 500,
+        diceValue: 1,
+        isRolling: false
+      };
+      
+      // Elements
+      const elements = {
+        canvas: document.getElementById('game-canvas'),
+        balanceDisplay: document.getElementById('balance-display'),
+        betInput: document.getElementById('bet-input'),
+        decreaseBet: document.getElementById('decrease-bet'),
+        increaseBet: document.getElementById('increase-bet'),
+        halfBet: document.getElementById('half-bet'),
+        doubleBet: document.getElementById('double-bet'),
+        maxBet: document.getElementById('max-bet'),
+        spinButton: document.getElementById('spin-button'),
+        currentTime: document.getElementById('current-time')
+      };
+      
+      // Canvas setup
+      const ctx = elements.canvas.getContext('2d');
+      
+      function resizeCanvas() {
+        elements.canvas.width = elements.canvas.clientWidth;
+        elements.canvas.height = elements.canvas.clientHeight;
+        drawGame();
+      }
+      
+      // Initialize canvas
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      
+      // Draw game
+      function drawGame() {
+        // Clear canvas
+        ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+        
+        // Draw background
+        const gradient = ctx.createLinearGradient(0, 0, 0, elements.canvas.height);
+        gradient.addColorStop(0, '#0d1117');
+        gradient.addColorStop(1, '#161b22');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
+        
+        // Draw grid
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.1)';
+        ctx.lineWidth = 1;
+        
+        const gridSize = 30;
+        
+        for (let x = 0; x <= elements.canvas.width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, elements.canvas.height);
+          ctx.stroke();
+        }
+        
+        for (let y = 0; y <= elements.canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(elements.canvas.width, y);
+          ctx.stroke();
+        }
+        
+        // Draw title
+        ctx.fillStyle = '#58a6ff';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Dice Game', elements.canvas.width / 2, 40);
+        
+        // Draw dice
+        const size = Math.min(elements.canvas.width, elements.canvas.height) * 0.3;
+        const x = (elements.canvas.width - size) / 2;
+        const y = (elements.canvas.height - size) / 2;
+        
+        // Draw dice body
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeStyle = '#0d1117';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, size, size);
+        
+        // Draw dots
+        ctx.fillStyle = '#0d1117';
+        const dotSize = size * 0.15;
+        const padding = size * 0.2;
+        
+        function drawDot(xPos, yPos) {
+          ctx.beginPath();
+          ctx.arc(x + xPos, y + yPos, dotSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Draw dots based on dice value
+        switch (state.diceValue) {
+          case 1:
+            drawDot(size / 2, size / 2);
+            break;
+          case 2:
+            drawDot(padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 3:
+            drawDot(padding, padding);
+            drawDot(size / 2, size / 2);
+            drawDot(size - padding, size - padding);
+            break;
+          case 4:
+            drawDot(padding, padding);
+            drawDot(padding, size - padding);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 5:
+            drawDot(padding, padding);
+            drawDot(padding, size - padding);
+            drawDot(size / 2, size / 2);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 6:
+            drawDot(padding, padding);
+            drawDot(padding, size / 2);
+            drawDot(padding, size - padding);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size / 2);
+            drawDot(size - padding, size - padding);
+            break;
+        }
+        
+        // Draw instructions if not rolling
+        if (!state.isRolling) {
+          ctx.fillStyle = '#2ea043';
+          ctx.font = '16px Arial';
+          ctx.fillText('Press SPIN to roll the dice', elements.canvas.width / 2, elements.canvas.height - 40);
+          
+          ctx.fillStyle = '#8b949e';
+          ctx.font = '14px Arial';
+          ctx.fillText('Win with 4, 5, or 6!', elements.canvas.width / 2, elements.canvas.height - 20);
+        }
+      }
+      
+      // Roll dice
+      function rollDice() {
+        if (state.isRolling) return;
+        
+        // Check balance
+        if (state.balance < state.bet) {
+          alert('Not enough balance to play!');
+          return;
+        }
+        
+        // Deduct bet
+        state.balance -= state.bet;
+        updateBalanceDisplay();
+        
+        // Start rolling animation
+        state.isRolling = true;
+        let rollCount = 0;
+        
+        const rollInterval = setInterval(() => {
+          state.diceValue = Math.floor(Math.random() * 6) + 1;
+          drawGame();
+          
+          rollCount++;
+          if (rollCount >= 10) {
+            clearInterval(rollInterval);
+            state.isRolling = false;
+            handleResult();
+          }
+        }, 100);
+      }
+      
+      // Handle dice roll result
+      function handleResult() {
+        const diceValue = state.diceValue;
+        
+        // Check for win
+        if (diceValue >= 4) {
+          // Calculate win amount
+          const multiplier = diceValue === 4 ? 2 : diceValue === 5 ? 3 : 5;
+          const winAmount = state.bet * multiplier;
+          
+          // Update balance
+          state.balance += winAmount;
+          updateBalanceDisplay();
+          
+          // Show message
+          showMessage(`You rolled ${diceValue} and won ${winAmount}!`, '#2ea043');
+        } else {
+          showMessage(`You rolled ${diceValue} and lost your bet.`, '#f85149');
+        }
+        
+        drawGame();
+      }
+      
+      // Show message on canvas
+      function showMessage(text, color) {
+        const x = elements.canvas.width / 2;
+        const y = elements.canvas.height - 70;
+        
+        ctx.fillStyle = color || '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x, y);
+        
+        // Clear message after 3 seconds
+        setTimeout(() => {
+          drawGame();
+        }, 3000);
+      }
+      
+      // Update balance display
+      function updateBalanceDisplay() {
+        elements.balanceDisplay.textContent = state.balance;
+      }
+      
+      // Update bet amount
+      function updateBet(amount) {
+        state.bet = Math.max(state.minBet, Math.min(state.maxBet, amount));
+        elements.betInput.value = state.bet;
+      }
+      
+      // Update current time
+      function updateTime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        
+        elements.currentTime.textContent = `${hours}:${minutes}:${seconds}`;
+      }
+      
+      // Set up event listeners
+      elements.spinButton.addEventListener('click', rollDice);
+      
+      elements.decreaseBet.addEventListener('click', () => {
+        updateBet(state.bet - 5);
+      });
+      
+      elements.increaseBet.addEventListener('click', () => {
+        updateBet(state.bet + 5);
+      });
+      
+      elements.halfBet.addEventListener('click', () => {
+        updateBet(Math.floor(state.bet / 2));
+      });
+      
+      elements.doubleBet.addEventListener('click', () => {
+        updateBet(state.bet * 2);
+      });
+      
+      elements.maxBet.addEventListener('click', () => {
+        updateBet(state.maxBet);
+      });
+      
+      // Update time every second
+      setInterval(updateTime, 1000);
+      updateTime();
+      
+      // Initial draw
+      drawGame();
+      
+      // Notify console
+      console.log('Standalone mode initialized - bypassing all framework dependencies');
+    });
+  </script>
+</body>
+</html>

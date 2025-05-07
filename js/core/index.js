@@ -11,9 +11,13 @@
   const modules = [
     'CanvasManager',
     'UIManager',
-    'GameStateManager',
-    'GameFramework'
+    'GameStateManager'
   ];
+  
+  // Only check for GameFramework if it's not already defined
+  if (typeof window.GameFramework === 'undefined') {
+    modules.push('GameFramework');
+  }
   
   // Utility modules
   const utils = [

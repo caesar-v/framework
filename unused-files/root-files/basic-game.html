@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic Game Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #161b22;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #0d1117;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #30363d;
+    }
+    
+    canvas {
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      width: 100%;
+      height: 300px;
+    }
+    
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      background-color: #238636;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    button:hover {
+      background-color: #2ea043;
+    }
+    
+    .balance {
+      padding: 8px 16px;
+      background-color: #161b22;
+      border-radius: 4px;
+      border: 1px solid #30363d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Basic Game Demo</h1>
+      <div class="balance">Balance: <span id="balance">1000</span></div>
+    </header>
+    
+    <canvas id="game-canvas"></canvas>
+    
+    <div class="controls">
+      <button id="spin-button">SPIN</button>
+      <button id="reset-button">RESET</button>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Basic canvas setup
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Make canvas responsive
+      function resizeCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        drawBackground();
+      }
+      
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+      
+      // Game state
+      let diceValue = 1;
+      let isRolling = false;
+      let balance = 1000;
+      const betAmount = 10;
+      
+      // Draw background grid
+      function drawBackground() {
+        ctx.fillStyle = '#0d1117';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw grid
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.1)';
+        ctx.lineWidth = 1;
+        
+        const gridSize = 30;
+        
+        // Vertical lines
+        for (let x = 0; x <= canvas.width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+      }
+      
+      // Draw dice
+      function drawDice() {
+        const size = Math.min(canvas.width, canvas.height) * 0.3;
+        const x = (canvas.width - size) / 2;
+        const y = (canvas.height - size) / 2;
+        
+        // Draw dice body
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeStyle = '#0d1117';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, size, size);
+        
+        // Draw dots
+        ctx.fillStyle = '#0d1117';
+        const dotSize = size * 0.15;
+        const padding = size * 0.2;
+        
+        function drawDot(xPos, yPos) {
+          ctx.beginPath();
+          ctx.arc(x + xPos, y + yPos, dotSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Draw dots based on dice value
+        switch (diceValue) {
+          case 1:
+            drawDot(size / 2, size / 2);
+            break;
+          case 2:
+            drawDot(padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 3:
+            drawDot(padding, padding);
+            drawDot(size / 2, size / 2);
+            drawDot(size - padding, size - padding);
+            break;
+          case 4:
+            drawDot(padding, padding);
+            drawDot(padding, size - padding);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 5:
+            drawDot(padding, padding);
+            drawDot(padding, size - padding);
+            drawDot(size / 2, size / 2);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size - padding);
+            break;
+          case 6:
+            drawDot(padding, padding);
+            drawDot(padding, size / 2);
+            drawDot(padding, size - padding);
+            drawDot(size - padding, padding);
+            drawDot(size - padding, size / 2);
+            drawDot(size - padding, size - padding);
+            break;
+        }
+        
+        // Draw text
+        ctx.fillStyle = '#58a6ff';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Dice Game', canvas.width / 2, 30);
+        
+        if (!isRolling) {
+          ctx.fillStyle = '#2ea043';
+          ctx.font = '16px Arial';
+          ctx.fillText('Press SPIN to roll the dice', canvas.width / 2, canvas.height - 30);
+          
+          // Draw rules
+          ctx.fillStyle = '#8b949e';
+          ctx.font = '14px Arial';
+          ctx.fillText('Rules: Roll 4, 5, or 6 to win!', canvas.width / 2, 60);
+          ctx.fillText('Win: 4 = 2x, 5 = 3x, 6 = 5x bet', canvas.width / 2, 80);
+        }
+      }
+      
+      // Roll dice
+      function rollDice() {
+        if (isRolling) return;
+        
+        if (balance < betAmount) {
+          alert('Not enough balance to play!');
+          return;
+        }
+        
+        // Deduct bet
+        balance -= betAmount;
+        updateBalance();
+        
+        isRolling = true;
+        let rollCount = 0;
+        const rollInterval = setInterval(() => {
+          diceValue = Math.floor(Math.random() * 6) + 1;
+          drawBackground();
+          drawDice();
+          rollCount++;
+          
+          if (rollCount >= 10) {
+            clearInterval(rollInterval);
+            isRolling = false;
+            handleResult(diceValue);
+          }
+        }, 100);
+      }
+      
+      // Handle result
+      function handleResult(value) {
+        if (value >= 4) {
+          // Calculate win amount
+          const multiplier = value === 4 ? 2 : value === 5 ? 3 : 5;
+          const winAmount = betAmount * multiplier;
+          
+          // Update balance
+          balance += winAmount;
+          updateBalance();
+          
+          // Show message
+          alert(`You rolled ${value} and won ${winAmount}!`);
+        } else {
+          // Show message
+          alert(`You rolled ${value} and lost your bet.`);
+        }
+        
+        // Redraw
+        drawBackground();
+        drawDice();
+      }
+      
+      // Update balance display
+      function updateBalance() {
+        document.getElementById('balance').textContent = balance;
+      }
+      
+      // Reset game
+      function resetGame() {
+        balance = 1000;
+        updateBalance();
+        diceValue = 1;
+        drawBackground();
+        drawDice();
+      }
+      
+      // Event listeners
+      document.getElementById('spin-button').addEventListener('click', rollDice);
+      document.getElementById('reset-button').addEventListener('click', resetGame);
+      
+      // Initial draw
+      drawBackground();
+      drawDice();
+    });
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /**
  * Module Load Test Script
- * Tests if all modules of the refactored game framework load correctly
+ * Tests if all modules of the modernized game framework load correctly
  */
 
 (function() {
@@ -10,8 +10,6 @@
     UIManager: typeof UIManager !== 'undefined',
     GameStateManager: typeof GameStateManager !== 'undefined',
     GameFramework: typeof GameFramework !== 'undefined',
-    AbstractBaseGame: typeof AbstractBaseGame !== 'undefined',
-    BaseGame: typeof BaseGame !== 'undefined',
     DiceGame: typeof DiceGame !== 'undefined',
     CardGame: typeof CardGame !== 'undefined'
   };
@@ -30,7 +28,7 @@
   }
   
   // Check for critical failures
-  const criticalModules = ['GameFramework', 'AbstractBaseGame', 'BaseGame'];
+  const criticalModules = ['GameFramework', 'DiceGame', 'CardGame'];
   const criticalFailures = criticalModules.filter(module => !modules[module]);
   
   if (criticalFailures.length > 0) {
@@ -41,10 +39,6 @@
     console.log('Please check the script loading order in index.html');
     
     // Try to identify the cause
-    if (!modules.AbstractBaseGame && modules.BaseGame) {
-      console.error('AbstractBaseGame must be loaded before BaseGame');
-    }
-    
     if (!modules.GameFramework) {
       console.error('Core framework modules may not be properly loaded. Check import order of CanvasManager, UIManager, GameStateManager');
     }
@@ -61,14 +55,26 @@
       console.warn('%c GameLoader instance not found in window', 'color: #f39c12;');
     }
     
-    // Check inheritance
-    if (modules.BaseGame && modules.AbstractBaseGame) {
+    // Check IGame implementation
+    if (modules.DiceGame && modules.CardGame) {
       try {
-        // Check inheritance relationship
-        const inheritsCorrectly = BaseGame.prototype instanceof AbstractBaseGame;
-        console.log('%c BaseGame inherits from AbstractBaseGame:', inheritsCorrectly ? 'Yes' : 'No', 'color:', inheritsCorrectly ? '#2ecc71' : '#e74c3c');
+        // Check that both games have essential IGame methods
+        const diceGame = new DiceGame();
+        const cardGame = new CardGame();
+        
+        const essentialMethods = ['initialize', 'start', 'destroy'];
+        const diceGameHasMethods = essentialMethods.every(method => typeof diceGame[method] === 'function');
+        const cardGameHasMethods = essentialMethods.every(method => typeof cardGame[method] === 'function');
+        
+        console.log('%c DiceGame implements IGame methods:', diceGameHasMethods ? 'Yes' : 'No', 'color:', diceGameHasMethods ? '#2ecc71' : '#e74c3c');
+        console.log('%c CardGame implements IGame methods:', cardGameHasMethods ? 'Yes' : 'No', 'color:', cardGameHasMethods ? '#2ecc71' : '#e74c3c');
+        
+        if (!diceGameHasMethods || !cardGameHasMethods) {
+          markTestError('Some games do not implement essential IGame methods');
+        }
       } catch (e) {
-        console.error('Error checking inheritance:', e);
+        console.error('Error checking IGame implementation:', e);
+        markTestError('Error checking IGame implementation: ' + e.message);
       }
     }
   }

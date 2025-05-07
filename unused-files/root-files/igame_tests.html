@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IGame Compatibility Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: #24292e;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e1e4e8;
+    }
+    
+    h1 {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      color: #24292e;
+    }
+    
+    .description {
+      font-size: 1.1em;
+      color: #586069;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #f1f1f1;
+      flex: 1;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      font-weight: bold;
+    }
+    
+    .tab:first-child {
+      border-top-left-radius: 4px;
+    }
+    
+    .tab:last-child {
+      border-top-right-radius: 4px;
+    }
+    
+    .tab.active {
+      background-color: white;
+      border-bottom: 1px solid white;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .tab-content {
+      display: none;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 0 0 4px 4px;
+      padding: 20px;
+      margin-top: -1px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    #test-runner-container {
+      min-height: 600px;
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid #e1e4e8;
+      color: #586069;
+      font-size: 0.9em;
+    }
+    
+    .info-box {
+      background-color: #f6f8fa;
+      border-left: 4px solid #0969da;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    
+    .instructions {
+      margin-bottom: 30px;
+    }
+    
+    .instructions h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    
+    .instructions ol, .instructions ul {
+      padding-left: 30px;
+    }
+    
+    .instructions li {
+      margin-bottom: 8px;
+    }
+    
+    pre {
+      background-color: #f6f8fa;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    
+    code {
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 85%;
+    }
+    
+    .code-block {
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    
+    .button-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #2ea44f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .button:hover {
+      background-color: #2c974b;
+    }
+    
+    .button.secondary {
+      background-color: #6e7781;
+    }
+    
+    .button.secondary:hover {
+      background-color: #57606a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>IGame Compatibility Tests</h1>
+      <p class="description">Automatically verify that your games correctly implement the IGame interface and are compatible with the game framework.</p>
+    </header>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="tests">Run Tests</div>
+      <div class="tab" data-tab="docs">Documentation</div>
+      <div class="tab" data-tab="api">API Reference</div>
+    </div>
+    
+    <div id="tests" class="tab-content active">
+      <div class="info-box">
+        <p><strong>Note:</strong> Make sure all your games are properly loaded before running tests. If you're developing a new game, make sure it's registered with the GameRegistry.</p>
+      </div>
+      
+      <div id="test-runner-container">
+        <!-- The test runner will be initialized here -->
+        <div class="button-container">
+          <button id="start-tests" class="button">Loading Test Runner...</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="docs" class="tab-content">
+      <h2>IGame Compatibility Testing</h2>
+      
+      <div class="instructions">
+        <h3>What are these tests for?</h3>
+        <p>The IGame Compatibility Tests verify that your game implementations correctly fulfill the requirements of the IGame interface. This ensures that your games will work seamlessly with the game framework, including lifecycle management, event handling, state management, and more.</p>
+        
+        <h3>How to run the tests</h3>
+        <ol>
+          <li>Make sure your game classes are properly loaded in the browser</li>
+          <li>Go to the "Run Tests" tab</li>
+          <li>Select the games you want to test from the list</li>
+          <li>Click "Run Tests" to start the testing process</li>
+          <li>Review the results and fix any issues in your game implementations</li>
+        </ol>
+        
+        <h3>Understanding the results</h3>
+        <p>Each game is tested against the following aspects of the IGame interface:</p>
+        <ul>
+          <li><strong>Constructor</strong> - Tests creating instances with and without parameters</li>
+          <li><strong>Interface Methods</strong> - Checks for the presence of all required methods</li>
+          <li><strong>Lifecycle</strong> - Verifies initialize(), start(), pause(), resume(), and destroy() work correctly</li>
+          <li><strong>Game Actions</strong> - Tests performAction(), calculatePotentialWin(), and more</li>
+          <li><strong>Events</strong> - Checks the event system (addEventListener, removeEventListener, etc.)</li>
+          <li><strong>State Management</strong> - Tests getState() and setState() functionality</li>
+        </ul>
+        
+        <h3>Interpreting failures</h3>
+        <p>If a test fails, the test runner will provide specific information about what went wrong:</p>
+        <ul>
+          <li><strong>Missing methods</strong> - Your game class doesn't implement a required method</li>
+          <li><strong>Incorrect return values</strong> - A method returns an incorrect type or value</li>
+          <li><strong>Exceptions during execution</strong> - A method throws an exception when called</li>
+          <li><strong>Timeout</strong> - An asynchronous method doesn't resolve within the expected time</li>
+        </ul>
+      </div>
+      
+      <h2>Implementing IGame Interface</h2>
+      
+      <p>To create a game that passes all compatibility tests, ensure it implements all required methods of the IGame interface:</p>
+      
+      <div class="code-block">
+        <pre><code>class MyGame {
+  constructor(config = {}) {
+    // Initialize state
+    this.state = {
+      betAmount: 10,
+      riskLevel: 'medium',
+      // Other game state properties
+    };
+    
+    // Configuration
+    this.config = {
+      theme: 'default',
+      ...config
+    };
+    
+    // Game info
+    this.info = {
+      id: 'my-game',
+      name: 'My Game',
+      version: '1.0.0'
+    };
+    
+    // Events
+    this.eventListeners = {};
+    this.availableEvents = ['gameStart', 'gameEnd', 'win', 'lose'];
+  }
+  
+  // Lifecycle methods
+  async initialize(config) {
+    this.container = config.container;
+    // Setup game elements
+    // Return a promise that resolves when initialization is complete
+    return Promise.resolve();
+  }
+  
+  async start() {
+    // Start the game
+    this.emit('gameStart', { timestamp: Date.now() });
+    return Promise.resolve();
+  }
+  
+  pause() {
+    // Pause the game
+  }
+  
+  resume() {
+    // Resume the game
+  }
+  
+  async destroy() {
+    // Clean up resources
+    this.container.innerHTML = '';
+    return Promise.resolve();
+  }
+  
+  // Action methods
+  async performAction(params) {
+    const { type } = params;
+    switch (type) {
+      case 'spin':
+        // Handle spin action
+        return Promise.resolve({ success: true });
+      default:
+        return Promise.reject(new Error(`Unknown action type: ${type}`));
+    }
+  }
+  
+  calculatePotentialWin(bet, riskLevel) {
+    // Calculate potential win based on bet and risk level
+    const multipliers = { low: 2, medium: 3, high: 5 };
+    return bet * (multipliers[riskLevel] || 1);
+  }
+  
+  // Configuration methods
+  updateSettings(settings) {
+    // Update game settings
+    Object.assign(this.config, settings);
+  }
+  
+  resize(width, height) {
+    // Resize game elements
+  }
+  
+  // State methods
+  getState() {
+    // Return current game state
+    return { ...this.state };
+  }
+  
+  setState(state) {
+    // Set game state
+    Object.assign(this.state, state);
+  }
+  
+  // Info methods
+  getInfo() {
+    // Return game info
+    return { ...this.info };
+  }
+  
+  supportsFeature(featureName) {
+    // Check if game supports a specific feature
+    const supportedFeatures = ['autoplay', 'risk_levels'];
+    return supportedFeatures.includes(featureName);
+  }
+  
+  // Event methods
+  getAvailableEvents() {
+    // Return list of events this game can emit
+    return [...this.availableEvents];
+  }
+  
+  addEventListener(eventName, handler) {
+    // Add event listener
+    if (!this.eventListeners[eventName]) {
+      this.eventListeners[eventName] = [];
+    }
+    this.eventListeners[eventName].push(handler);
+  }
+  
+  removeEventListener(eventName, handler) {
+    // Remove event listener
+    if (this.eventListeners[eventName]) {
+      this.eventListeners[eventName] = this.eventListeners[eventName]
+        .filter(h => h !== handler);
+    }
+  }
+  
+  // Helper method for emitting events
+  emit(eventName, data) {
+    if (this.eventListeners[eventName]) {
+      for (const handler of this.eventListeners[eventName]) {
+        handler(data);
+      }
+    }
+  }
+}</code></pre>
+      </div>
+      
+      <div class="button-container">
+        <a href="#tests" class="button tab-link" data-tab="tests">Run Tests Now</a>
+      </div>
+    </div>
+    
+    <div id="api" class="tab-content">
+      <h2>API Reference</h2>
+      
+      <h3>IGameTester</h3>
+      <p>The core testing utility that checks a game's implementation against the IGame interface.</p>
+      
+      <div class="code-block">
+        <pre><code>// Create a new tester
+const tester = new IGameTester({
+  container: document.getElementById('test-container'),
+  verbose: true,
+  timeout: 5000,
+  onComplete: function(results) {
+    console.log('Testing completed:', results);
+  }
+});
+
+// Set the game to test
+tester.setGame(MyGame, { /* game config */ });
+
+// Run all tests
+tester.runAllTests().then(results => {
+  console.log('Test results:', results);
+});</code></pre>
+      </div>
+      
+      <h3>IGameTestRunner</h3>
+      <p>A higher-level utility that automatically discovers games and runs tests with a visual interface.</p>
+      
+      <div class="code-block">
+        <pre><code>// Create a test runner
+const runner = new IGameTestRunner({
+  container: document.getElementById('runner-container'),
+  autoRun: false,
+  verbose: true,
+  onComplete: function(results) {
+    console.log('All tests completed:', results);
+  }
+});
+
+// Discover games and show them in the UI
+runner.discoverAndTest();
+
+// Run tests for selected games
+runner.runSelectedTests();</code></pre>
+      </div>
+      
+      <h3>Programmatic Usage</h3>
+      <p>You can also use the testing utilities programmatically in your own code:</p>
+      
+      <div class="code-block">
+        <pre><code>// Example: Running tests from the console
+async function testMyGame() {
+  const tester = new IGameTester();
+  tester.setGame(MyGame);
+  const results = await tester.runAllTests();
+  
+  if (results.failed === 0) {
+    console.log('All tests passed!');
+  } else {
+    console.error(`${results.failed} tests failed.`);
+    console.log('Failed tests:', results.testDetails.filter(t => t.status === 'fail'));
+  }
+}
+
+// Example: Testing all registered games
+async function testAllGames() {
+  const runner = new IGameTestRunner({
+    container: document.createElement('div')
+  });
+  
+  await runner.discoverGames();
+  const results = await runner.runAllTests();
+  
+  console.log(`Tested ${runner.games.length} games:`);
+  console.log(`- ${results.summary.passed} passed`);
+  console.log(`- ${results.summary.failed} failed`);
+  
+  return results;
+}</code></pre>
+      </div>
+      
+      <div class="button-container">
+        <a href="#tests" class="button tab-link" data-tab="tests">Run Tests Now</a>
+      </div>
+    </div>
+    
+    <footer>
+      <p>Game Framework IGame Compatibility Tests</p>
+    </footer>
+  </div>
+  
+  <!-- Load utility modules first -->
+  <script src="js/utils/helpers.js"></script>
+  
+  <!-- Load core modules in order -->
+  <script src="js/core/CanvasManager.js"></script>
+  <script src="js/core/UIManager.js"></script>
+  <script src="js/core/GameStateManager.js"></script>
+  <script src="js/core/gameFramework.js"></script>
+  <script src="js/core/gameLoader.js"></script>
+  
+  <!-- Game implementations -->
+  <script src="games/diceGame.js"></script>
+  <script src="games/cardGame.js"></script>
+  
+  <!-- Test utilities -->
+  <script src="js/test/IGameTester.js"></script>
+  <script src="js/test/IGameTestRunner.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tab switching functionality
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          this.classList.add('active');
+          
+          // Hide all tab contents
+          tabContents.forEach(content => content.classList.remove('active'));
+          
+          // Show corresponding tab content
+          const tabId = this.getAttribute('data-tab');
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+      
+      // Tab links within content
+      document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tabId = this.getAttribute('data-tab');
+          document.querySelector(`.tab[data-tab="${tabId}"]`).click();
+        });
+      });
+      
+      // Initialize test runner
+      const startTestsButton = document.getElementById('start-tests');
+      const testRunnerContainer = document.getElementById('test-runner-container');
+      
+      // Wait for scripts to load
+      setTimeout(() => {
+        if (typeof IGameTestRunner === 'undefined') {
+          startTestsButton.textContent = 'Error: Test Runner not loaded';
+          startTestsButton.classList.add('secondary');
+          return;
+        }
+        
+        startTestsButton.textContent = 'Initialize Test Runner';
+        startTestsButton.addEventListener('click', function() {
+          // Remove button
+          this.remove();
+          
+          // Initialize test runner
+          const runner = new IGameTestRunner({
+            container: testRunnerContainer,
+            autoRun: false,
+            verbose: true
+          });
+          
+          // Discover games
+          runner.discoverAndTest();
+        });
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

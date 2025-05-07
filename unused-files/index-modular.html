@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Prototyping Framework</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components/hot-reload.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Custom styles for modular version */
+    .pulse-animation {
+      animation: pulse 1s infinite;
+      box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.7);
+    }
+    
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.7);
+      }
+      
+      70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(88, 166, 255, 0);
+      }
+      
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(88, 166, 255, 0);
+      }
+    }
+    
+    /* Make chat panel more visible */
+    .chat-panel.active {
+      transform: translateX(0);
+    }
+    
+    /* Style chatframe */
+    #watchers-chat {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="outer-container">
+    <div id="game-container" class="game-container pc">
+      <header class="header">
+        <div class="header-left">
+          <h1 class="portal-title game-title">Playtagon</h1>
+          
+          <!-- Game Search Bar -->
+          <div class="search-bar">
+            <div class="search-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+            <input type="text" class="search-input" id="game-search" placeholder="Search games...">
+            <button class="search-clear" id="clear-search" style="display: none;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="header-right">
+          <!-- Balance display - Only visible to logged in users -->
+          <div class="balance-display user-only-element" style="display: none;">
+            <span class="wallet-label">Wallet</span>
+            <div class="balance-value-container">
+              <div class="gold-coin-icon">
+                <img src="assets/images/StatusBarIcon_Gold.png" alt="Gold">
+              </div>
+              <span class="balance-value" id="balance-display">1000.00</span>
+            </div>
+          </div>
+          
+          <!-- Auth Controls - Toggles between login/signup and user info -->
+          <div class="auth-controls" id="auth-controls">
+            <!-- Not logged in state (default) -->
+            <div class="auth-buttons" id="auth-buttons">
+              <button class="auth-button login-button" id="login-button">
+                Login
+              </button>
+              <button class="auth-button signup-button" id="signup-button">
+                Register
+              </button>
+            </div>
+            
+            <!-- Logged in state (hidden by default) -->
+            <div class="user-info" id="user-info" style="display: none;">
+              <div class="user-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+              </div>
+              <div class="user-details">
+                <span class="username" id="username">Player1</span>
+              </div>
+              <button class="auth-button logout-button" id="logout-button">
+                Logout
+              </button>
+            </div>
+          </div>
+          
+          <!-- Control buttons - Only visible to logged in users -->
+          <div class="header-controls user-only-element" style="display: none;">
+            <button class="control-button active" id="sound-button" title="Toggle Sound">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a11.25 11.25 0 01-6.302 0l-1.32-.377A2.25 2.25 0 017.5 16.303v-3.75M9 9l10.5-3L9 3v6z" />
+              </svg>
+            </button>
+            <button class="control-button" id="chat-header-button" title="Open Chat">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+              </svg>
+            </button>
+            <button class="control-button" id="menu-button" title="Game Menu">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+              </svg>
+            </button>
+            <button class="control-button" id="settings-button" title="Game Settings">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <div class="game-content" 
+           style="grid-template-areas: 'betting playground'; grid-template-columns: 300px 1fr;"
+           data-md-style="grid-template-areas: 'betting playground'; grid-template-columns: 300px 1fr;"
+           data-base-style="grid-template-areas: 'playground' 'betting'; grid-template-columns: 1fr;">
+        
+        <!-- Betting Zone -->
+        <div class="betting-zone" style="grid-area: betting;">
+          <!-- Play Mode Toggle (Manual/Auto) -->
+          <div class="play-mode-section">
+            <div class="play-mode-tabs">
+              <button class="play-mode-tab active" id="manual-tab">Manual</button>
+              <button class="play-mode-tab" id="auto-tab">Auto</button>
+            </div>
+          </div>
+          
+          <!-- Bet Amount Panel -->
+          <div class="control-panel">
+            <div class="control-panel-header">
+              <span class="control-panel-title">Bet Amount</span>
+            </div>
+            <div class="bet-input-group">
+              <button class="btn btn-outline" id="decrease-bet">-</button>
+              <input type="text" class="bet-input" id="bet-input" value="10" readonly>
+              <div class="gold-coin-icon small">
+                <img src="assets/images/StatusBarIcon_Gold.png" alt="Gold">
+              </div>
+              <button class="btn btn-outline" id="increase-bet">+</button>
+            </div>
+            <div class="quick-bets">
+              <button class="quick-bet" id="half-bet">1/2</button>
+              <button class="quick-bet" id="double-bet">×2</button>
+              <button class="quick-bet" id="max-bet">Max</button>
+            </div>
+          </div>
+          
+          <!-- Risk Level Panel -->
+          <div class="risk-panel">
+            <span class="risk-panel-title">Risk Level</span>
+            <div class="select-wrapper">
+              <select id="risk-level" class="select-dropdown">
+                <option value="low">Low Risk</option>
+                <option value="medium" selected>Medium Risk</option>
+                <option value="high">High Risk</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Play Controls - Spin button and profit display -->
+          <div class="play-controls">
+            <!-- Spin Button -->
+            <button class="spin-btn" id="spin-button">SPIN</button>
+            
+            <!-- Profit Display -->
+            <div class="profit-panel">
+              <span class="profit-label">Profit on Win</span>
+              <div class="profit-value-container">
+                <div class="gold-coin-icon small">
+                  <img src="assets/images/StatusBarIcon_Gold.png" alt="Gold">
+                </div>
+                <span class="profit-value" id="potential-win">30.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Playground Zone -->
+        <div class="playground-zone" style="grid-area: playground;">
+          <canvas id="game-canvas"></canvas>
+          <div id="status-message" style="position: absolute; bottom: 10px; left: 10px; color: #2ea043; font-size: 14px;"></div>
+        </div>
+        
+      </div>
+      
+      <footer class="footer">
+        <div>Session ID: PB-9876-5432</div>
+        <div id="current-time">00:00:00</div>
+        <div id="footer-game-title">Dice Game</div>
+      </footer>
+      
+    </div>
+    
+    <!-- Chat Panel -->
+    <div id="chat-panel" class="chat-panel user-only-element">
+      <div class="chat-header">
+        <h3>Live Chat</h3>
+        <button id="close-chat" class="close-chat">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="chat-content">
+        <iframe id="watchers-chat" src="about:blank" frameborder="0"></iframe>
+      </div>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settings-panel">
+      <div class="settings-header">
+        <h2 class="settings-title">Game Settings</h2>
+        <button class="settings-close" id="close-settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="settings-content">
+        <!-- Game Section -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Game</h3>
+          <div class="game-selector-controls">
+            <label class="control-label" for="game-select">Select Game:</label>
+            <div class="select-wrapper">
+              <select id="game-select" class="control-select" data-default="dice">
+                <option value="dice" selected>Dice Game</option>
+                <option value="card">Card Game</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Display Section -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Display</h3>
+          
+          <!-- Screen Info -->
+          <div class="screen-info">
+            <div class="control-label">Screen Resolution:</div>
+            <div class="info-display" id="settings-screen-resolution">1920×1080</div>
+            <div class="info-display" id="settings-window-size">Window: 1920×1080</div>
+            <div class="info-display" id="settings-canvas-size">Canvas: 1920×1080</div>
+            <div class="info-display" id="settings-game-canvas">Game Playground: 0×0</div>
+          </div>
+          
+          <!-- Layout Toggle -->
+          <div class="layout-controls">
+            <div class="control-label">Layout:</div>
+            <div class="layout-toggle">
+              <input type="radio" name="layout" id="desktop" checked>
+              <label for="desktop">PC (16:9)</label>
+              <input type="radio" name="layout" id="mobile">
+              <label for="mobile">Mobile (9:16)</label>
+              <div class="toggle-indicator"></div>
+            </div>
+          </div>
+          
+          <!-- Theme Selector -->
+          <div class="theme-controls">
+            <label class="control-label" for="theme-select">Theme:</label>
+            <div class="select-wrapper">
+              <select id="theme-select" class="control-select">
+                <option value="default">Dark Theme</option>
+                <option value="pirate">Pirate Theme</option>
+                <option value="neon">Neon Theme</option>
+                <option value="classic">Classic Casino</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Development Section -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">Development</h3>
+          
+          <!-- Debug Controls -->
+          <div class="debug-controls">
+            <span class="control-label">Debug Mode:</span>
+            <div class="toggle-switch-wrapper">
+              <label class="toggle-switch">
+                <input type="checkbox" id="debug-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <button id="debug-button">🐛 Analyze</button>
+          </div>
+          
+          <!-- Hot Reload Controls -->
+          <div class="debug-controls" style="margin-top: 10px;">
+            <span class="control-label">Hot Reload:</span>
+            <div class="toggle-switch-wrapper">
+              <label class="toggle-switch">
+                <input type="checkbox" id="hot-reload-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <button id="hot-reload-button">🔄 Reload Now</button>
+          </div>
+          
+          <!-- Test Controls -->
+          <div class="test-controls">
+            <button id="autotest-button" style="background-color: #6272a4; color: #f8f8f2; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; margin-right: 10px;">Run Tests (Safe Mode)</button>
+            <button id="force-init-button" style="background-color: #50fa7b; color: #282a36; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; margin-right: 10px;">Force Game Init</button>
+            <a href="admin-panel.html" target="_blank" style="background-color: #ff79c6; color: #f8f8f2; padding: 8px 16px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block;">Admin Panel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Popup Menu -->
+    <div class="overlay" id="menu-overlay">
+      <div class="popup">
+        <div class="popup-header">
+          <h2 class="popup-title">Game Information</h2>
+          <button class="popup-close" id="close-menu">×</button>
+        </div>
+        <div class="popup-tabs">
+          <div class="popup-tab active" data-tab="rules">Rules</div>
+          <div class="popup-tab" data-tab="paytable">Paytable</div>
+          <div class="popup-tab" data-tab="settings">Settings</div>
+          <div class="popup-tab" data-tab="fairness">Provably Fair</div>
+        </div>
+        <div class="popup-content">
+          <div class="tab-content active" id="rules-tab">
+            <h3>Game Rules</h3>
+            <p>This is a game prototyping framework. Customize these rules for your specific game implementation.</p>
+            <p>HOW TO PLAY:</p>
+            <ul>
+              <li>Place your bet and click SPIN</li>
+              <li>Game logic can be customized in your implementation</li>
+              <li>Winning conditions are defined by your game class</li>
+            </ul>
+          </div>
+          
+          <div class="tab-content" id="paytable-tab">
+            <h3>Paytable</h3>
+            <p>SYMBOL PAYOUTS (per bet unit):</p>
+            <ul>
+              <li>Symbol payouts are defined in your game implementation</li>
+              <li>Customize this table for your specific game</li>
+            </ul>
+          </div>
+          
+          <div class="tab-content" id="settings-tab">
+            <h3>Settings</h3>
+            <p>Adjust sound and game options:</p>
+            <div class="toggle-group" style="margin: 20px 0; display: flex; align-items: center; gap: 10px;">
+              <span style="color: var(--color-foreground-secondary);">Sound Effects</span>
+              <div class="toggle-switch" style="position: relative; width: 50px; height: 24px; background-color: var(--color-primary); border-radius: 999px; cursor: pointer;">
+                <div style="position: absolute; width: 20px; height: 20px; background-color: white; border-radius: 50%; top: 2px; left: 28px;"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-content" id="fairness-tab">
+            <h3>Provably Fair</h3>
+            <p>Our games use a provably fair algorithm to ensure fair outcomes:</p>
+            <ol>
+              <li>Each game has a unique server seed and client seed</li>
+              <li>Server seeds are hashed and provided before the game</li>
+              <li>Client seeds can be changed by you at any time</li>
+              <li>After each game, you can verify the fairness of the outcome</li>
+            </ol>
+            <p style="margin-top: 20px;">Current Session Hash: 0x7d2c8f1e5b9a6d4c8e7b2a9f5c3d8e7f6a3b2c1</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Load modular framework components -->
+  <script src="js/simple/canvasManager.js"></script>
+  <script src="js/simple/fullGameManager.js"></script>
+  <script src="js/simple/diceGame.js"></script>
+  <script src="js/simple/cardGame.js"></script>
+  
+  <!-- Initialize the framework with all features -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM Content Loaded - Initializing modular framework');
+      
+      // Create game manager
+      const gameManager = new FullGameManager({
+        defaultBalance: 1000,
+        defaultBet: 10,
+        minBet: 5,
+        maxBet: 500,
+        defaultTheme: 'default',
+        defaultLayout: 'pc'
+      });
+      
+      // Register games
+      gameManager.registerGame('dice', createDiceGame);
+      gameManager.registerGame('card', createCardGame);
+      
+      // Make gameManager globally accessible 
+      window.gameManager = gameManager;
+      
+      // Initialize game manager
+      if (gameManager.init()) {
+        console.log('Game manager initialized successfully');
+        
+        // Load default game
+        gameManager.loadGame('dice');
+        
+        // Auto login for demonstration
+        simulateUserLogin();
+        
+        // Show chat panel initially
+        const chatPanel = document.getElementById('chat-panel');
+        if (chatPanel) {
+          chatPanel.classList.add('active');
+        }
+      } else {
+        console.error('Failed to initialize game manager');
+      }
+      
+      // Setup popup tab switching
+      setupPopupTabs();
+      
+      // Handle chat panel
+      setupChatPanel();
+      
+      // Setup auth mock controls
+      setupAuthControls();
+      
+      // Handle global error recovery
+      setupErrorRecovery();
+    });
+    
+    /**
+     * Set up popup tab switching
+     */
+    function setupPopupTabs() {
+      const tabs = document.querySelectorAll('.popup-tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs and contents
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          this.classList.add('active');
+          
+          // Show corresponding content
+          const tabId = this.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+      });
+    }
+    
+    /**
+     * Set up chat panel
+     */
+    function setupChatPanel() {
+      const chatButton = document.getElementById('chat-header-button');
+      const closeChat = document.getElementById('close-chat');
+      const chatPanel = document.getElementById('chat-panel');
+      
+      if (chatButton && closeChat && chatPanel) {
+        chatButton.addEventListener('click', function() {
+          chatPanel.classList.add('active');
+        });
+        
+        closeChat.addEventListener('click', function() {
+          chatPanel.classList.remove('active');
+        });
+      }
+    }
+    
+    /**
+     * Set up authentication controls
+     */
+    function setupAuthControls() {
+      const loginButton = document.getElementById('login-button');
+      const signupButton = document.getElementById('signup-button');
+      const logoutButton = document.getElementById('logout-button');
+      const authButtons = document.getElementById('auth-buttons');
+      const userInfo = document.getElementById('user-info');
+      const userOnlyElements = document.querySelectorAll('.user-only-element');
+      
+      if (loginButton && signupButton && logoutButton && authButtons && userInfo) {
+        // Login
+        loginButton.addEventListener('click', function() {
+          simulateUserLogin();
+        });
+        
+        // Register (same as login for demo)
+        signupButton.addEventListener('click', function() {
+          simulateUserLogin();
+        });
+        
+        // Logout
+        logoutButton.addEventListener('click', function() {
+          authButtons.style.display = 'flex';
+          userInfo.style.display = 'none';
+          
+          // Hide all user-only elements
+          userOnlyElements.forEach(el => {
+            el.style.display = 'none';
+          });
+        });
+      }
+    }
+    
+    /**
+     * Simulate user login to show all features
+     */
+    function simulateUserLogin() {
+      // Show user info and hide login buttons
+      const authButtons = document.getElementById('auth-buttons');
+      const userInfo = document.getElementById('user-info');
+      
+      if (authButtons) {
+        authButtons.style.display = 'none';
+      }
+      
+      if (userInfo) {
+        userInfo.style.display = 'flex';
+        // Set a custom username
+        const usernameElement = document.getElementById('username');
+        if (usernameElement) {
+          usernameElement.textContent = 'Player123';
+        }
+      }
+      
+      // Show all user-only elements
+      const userOnlyElements = document.querySelectorAll('.user-only-element');
+      userOnlyElements.forEach(el => {
+        el.style.display = '';
+      });
+      
+      // Activate the menu button to make it more visible
+      setTimeout(() => {
+        const menuButton = document.getElementById('menu-button');
+        if (menuButton) {
+          menuButton.classList.add('pulse-animation');
+          
+          // Show menu overlay briefly
+          const menuOverlay = document.getElementById('menu-overlay');
+          if (menuOverlay) {
+            menuOverlay.style.display = 'flex';
+            
+            // Hide it after 2 seconds
+            setTimeout(() => {
+              menuOverlay.style.display = 'none';
+              menuButton.classList.remove('pulse-animation');
+            }, 2000);
+          }
+        }
+      }, 1000);
+      
+      // Set iframe source for chat to show content
+      const watchersChat = document.getElementById('watchers-chat');
+      if (watchersChat) {
+        // Use a placeholder page or about:blank
+        watchersChat.src = 'data:text/html,<html><body style="background:#1e1e2e;color:#f8f8f2;font-family:sans-serif;padding:10px;"><h3>Live Chat</h3><div style="border-left:3px solid #bd93f9;padding-left:10px;margin:10px 0;"><b>System</b>: Welcome to the chat!</div><div style="border-left:3px solid #50fa7b;padding-left:10px;margin:10px 0;"><b>Player456</b>: Hello everyone!</div><div style="border-left:3px solid #ff79c6;padding-left:10px;margin:10px 0;"><b>GameMaster</b>: The next tournament starts in 30 minutes</div></body></html>';
+      }
+    }
+    
+    /**
+     * Set up error recovery
+     */
+    function setupErrorRecovery() {
+      // Error recovery tracking state
+      const errorState = {
+        attempts: 0,
+        lastErrorTime: 0,
+        consecutiveErrors: 0,
+        recoveryInProgress: false
+      };
+      
+      // Add global error handler
+      window.addEventListener('error', function(event) {
+        const error = event.error || new Error('Unknown error');
+        console.error('Global error caught:', error.message);
+        
+        // Check for rapid consecutive errors
+        const now = Date.now();
+        if (now - errorState.lastErrorTime < 5000) {
+          errorState.consecutiveErrors++;
+        } else {
+          errorState.consecutiveErrors = 1;
+        }
+        
+        // Update error tracking state
+        errorState.lastErrorTime = now;
+        
+        // Don't attempt recovery if already in progress or too many consecutive errors
+        if (errorState.recoveryInProgress || errorState.consecutiveErrors > 3) {
+          return;
+        }
+        
+        // Mark recovery as in progress
+        errorState.recoveryInProgress = true;
+        
+        // Try to recover
+        if (window.gameManager) {
+          console.log('Attempting to recover from error');
+          
+          try {
+            // Clean up existing resources
+            window.gameManager.cleanup();
+            
+            // Re-initialize
+            window.gameManager.init();
+            
+            // Reload default game
+            window.gameManager.loadGame('dice');
+            
+            console.log('Recovery successful');
+          } catch (recoveryError) {
+            console.error('Recovery failed:', recoveryError);
+          }
+        }
+        
+        // Reset recovery state after attempt
+        setTimeout(() => {
+          errorState.recoveryInProgress = false;
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Framework Core Debugger</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #1a1a1a;
+      color: #eee;
+      padding: 20px;
+    }
+    h1, h2, h3 {
+      color: #ff9900;
+    }
+    .control-panel {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #2a2a2a;
+      color: #eee;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #3a3a3a;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .error {
+      color: #f44336;
+    }
+    #log {
+      background-color: #222;
+      padding: 10px;
+      height: 300px;
+      overflow: auto;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .separator {
+      height: 1px;
+      background-color: #555;
+      margin: 10px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #2a2a2a;
+    }
+    .module-available {
+      color: #4CAF50;
+    }
+    .module-missing {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <h1>Framework Core Debugger</h1>
+  <p>This tool helps diagnose issues with the core framework modules.</p>
+
+  <div class="control-panel">
+    <h2>Module Status</h2>
+    <table id="moduleTable">
+      <tr>
+        <th>Module Name</th>
+        <th>Status</th>
+        <th>Type</th>
+      </tr>
+      <!-- Module status will be populated here -->
+    </table>
+  </div>
+
+  <div class="control-panel">
+    <h2>Static Script Loader</h2>
+    <p>Load core scripts in sequence to identify loading issues:</p>
+    <button id="loadConfig">1. Load config.js</button>
+    <button id="loadUtils">2. Load helpers.js</button>
+    <button id="loadCanvas">3. Load CanvasManager.js</button>
+    <button id="loadUI">4. Load UIManager.js</button>
+    <button id="loadGSM">5. Load GameStateManager.js</button>
+    <button id="loadGF">6. Load gameFramework.js</button>
+    <button id="loadGameLoader">7. Load gameLoader.js</button>
+  </div>
+
+  <div class="control-panel">
+    <h2>Dynamic Module Loader</h2>
+    <p>Import modules using dynamic import() to test ES module loading:</p>
+    <button id="importGameRegistry">Import GameRegistry.js</button>
+    <button id="importGameAPIInterface">Import GameAPI Interface</button>
+    <button id="importCardGame">Import CardGame.js</button>
+    <button id="importDiceGame">Import DiceGame.js</button>
+  </div>
+
+  <div class="control-panel">
+    <h2>Initialize Components</h2>
+    <button id="initGameFramework">Create GameFramework instance</button>
+    <button id="initGameLoader">Create GameLoader instance</button>
+    <button id="analyzeDOM">Analyze DOM Structure</button>
+    <button id="clearLog">Clear Log</button>
+  </div>
+
+  <h3>Debug Log</h3>
+  <div id="log"></div>
+
+  <script>
+    // Function to log messages
+    function log(message, type = 'info') {
+      const logElement = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = type;
+      entry.textContent = `[${timestamp}] ${message}`;
+      logElement.appendChild(entry);
+      logElement.scrollTop = logElement.scrollHeight;
+      console.log(`[${type}] ${message}`);
+    }
+
+    // Check all modules at startup
+    function checkModules() {
+      const moduleTable = document.getElementById('moduleTable');
+      
+      // Clear existing rows except header
+      while (moduleTable.rows.length > 1) {
+        moduleTable.deleteRow(1);
+      }
+      
+      const modules = [
+        { name: 'config', globalVar: 'config', type: 'Config' },
+        { name: 'helpers', globalVar: 'Helpers', type: 'Utility' },
+        { name: 'CanvasManager', globalVar: 'CanvasManager', type: 'Core' },
+        { name: 'UIManager', globalVar: 'UIManager', type: 'Core' },
+        { name: 'GameStateManager', globalVar: 'GameStateManager', type: 'Core' },
+        { name: 'GameFramework', globalVar: 'GameFramework', type: 'Core' },
+        { name: 'GameLoader', globalVar: 'GameLoader', type: 'Core' },
+        { name: 'DiceGame', globalVar: 'DiceGame', type: 'Game' },
+        { name: 'CardGame', globalVar: 'CardGame', type: 'Game' },
+        { name: 'gameInitializer', globalVar: 'gameInitializer', type: 'Service' },
+        { name: 'frameworkStarter', globalVar: 'frameworkStarter', type: 'Service' }
+      ];
+      
+      modules.forEach(module => {
+        const row = moduleTable.insertRow();
+        const nameCell = row.insertCell(0);
+        const statusCell = row.insertCell(1);
+        const typeCell = row.insertCell(2);
+        
+        nameCell.textContent = module.name;
+        typeCell.textContent = module.type;
+        
+        if (window[module.globalVar] !== undefined) {
+          statusCell.textContent = 'Available';
+          statusCell.className = 'module-available';
+        } else {
+          statusCell.textContent = 'Missing';
+          statusCell.className = 'module-missing';
+        }
+      });
+      
+      log('Module check complete');
+    }
+
+    // Load script with a Promise
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        log(`Loading script: ${src}`);
+        
+        const script = document.createElement('script');
+        script.src = src;
+        
+        script.onload = () => {
+          log(`Script loaded successfully: ${src}`, 'success');
+          resolve();
+        };
+        
+        script.onerror = (error) => {
+          log(`Failed to load script: ${src}`, 'error');
+          reject(error);
+        };
+        
+        document.head.appendChild(script);
+      });
+    }
+
+    // Dynamic import with a try/catch wrapper
+    async function safeImport(modulePath) {
+      log(`Attempting to import: ${modulePath}`);
+      
+      try {
+        const module = await import(modulePath);
+        log(`Successfully imported: ${modulePath}`, 'success');
+        
+        // Log the module contents
+        const keys = Object.keys(module);
+        log(`Module exports: ${keys.join(', ')}`);
+        
+        return module;
+      } catch (error) {
+        log(`Import error for ${modulePath}: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+
+    // Initialize GameFramework
+    function createGameFramework() {
+      try {
+        if (typeof GameFramework !== 'function') {
+          log('GameFramework is not defined. Cannot create instance.', 'error');
+          return;
+        }
+        
+        const framework = new GameFramework({
+          gameTitle: 'Debug Framework'
+        });
+        
+        log('GameFramework instance created successfully', 'success');
+        window.debugFramework = framework;
+        
+        // Log framework object structure
+        log(`Framework modules: ${Object.keys(framework.modules).join(', ')}`);
+        
+        return framework;
+      } catch (error) {
+        log(`Error creating GameFramework: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+
+    // Initialize GameLoader
+    function createGameLoader() {
+      try {
+        if (typeof GameLoader !== 'function') {
+          log('GameLoader is not defined. Cannot create instance.', 'error');
+          return;
+        }
+        
+        const loader = new GameLoader();
+        
+        log('GameLoader instance created successfully', 'success');
+        window.debugLoader = loader;
+        
+        // Log loader details
+        if (loader.gameRegistry) {
+          log(`GameLoader registry has ${Object.keys(loader.gameRegistry).length} games`);
+        }
+        
+        return loader;
+      } catch (error) {
+        log(`Error creating GameLoader: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+
+    // Analyze DOM structure
+    function analyzeDOM() {
+      const gameContainer = document.querySelector('#game-container');
+      if (!gameContainer) {
+        log('Game container not found in DOM', 'error');
+      } else {
+        log(`Game container found: ${gameContainer.className}`, 'success');
+      }
+      
+      const gameCanvas = document.querySelector('#game-canvas');
+      if (!gameCanvas) {
+        log('Game canvas not found in DOM', 'error');
+      } else {
+        log(`Game canvas found: ${gameCanvas.width}×${gameCanvas.height}`, 'success');
+      }
+      
+      const scriptTags = document.querySelectorAll('script');
+      log(`Found ${scriptTags.length} script tags in document`);
+      
+      // Check for script load errors
+      const scriptErrors = performance.getEntriesByType('resource')
+        .filter(r => r.initiatorType === 'script' && !r.responseEnd);
+      
+      if (scriptErrors.length > 0) {
+        log(`Found ${scriptErrors.length} script loading errors:`, 'error');
+        scriptErrors.forEach(err => {
+          log(`Failed to load: ${err.name}`, 'error');
+        });
+      } else {
+        log('No script loading errors detected', 'success');
+      }
+    }
+
+    // Set up button event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load core scripts sequentially
+      document.getElementById('loadConfig').addEventListener('click', () => 
+        loadScript('js/config.js').then(checkModules));
+      
+      document.getElementById('loadUtils').addEventListener('click', () => 
+        loadScript('js/utils/helpers.js').then(checkModules));
+      
+      document.getElementById('loadCanvas').addEventListener('click', () => 
+        loadScript('js/core/CanvasManager.js').then(checkModules));
+      
+      document.getElementById('loadUI').addEventListener('click', () => 
+        loadScript('js/core/UIManager.js').then(checkModules));
+      
+      document.getElementById('loadGSM').addEventListener('click', () => 
+        loadScript('js/core/GameStateManager.js').then(checkModules));
+      
+      document.getElementById('loadGF').addEventListener('click', () => 
+        loadScript('js/core/gameFramework.js').then(checkModules));
+      
+      document.getElementById('loadGameLoader').addEventListener('click', () => 
+        loadScript('js/core/gameLoader.js').then(checkModules));
+      
+      // Dynamic imports
+      document.getElementById('importGameRegistry').addEventListener('click', () => 
+        safeImport('/api/core/GameRegistry.js').then(checkModules));
+      
+      document.getElementById('importGameAPIInterface').addEventListener('click', () => 
+        safeImport('/api/interfaces/IGame.js').then(checkModules));
+      
+      document.getElementById('importCardGame').addEventListener('click', () => 
+        safeImport('/games/cardGame.js').then(checkModules));
+      
+      document.getElementById('importDiceGame').addEventListener('click', () => 
+        safeImport('/games/diceGame.js').then(checkModules));
+      
+      // Initialize components
+      document.getElementById('initGameFramework').addEventListener('click', createGameFramework);
+      document.getElementById('initGameLoader').addEventListener('click', createGameLoader);
+      document.getElementById('analyzeDOM').addEventListener('click', analyzeDOM);
+      
+      // Clear log
+      document.getElementById('clearLog').addEventListener('click', () => {
+        document.getElementById('log').innerHTML = '';
+      });
+      
+      // Run initial module check
+      checkModules();
+      log('Debug tool initialized');
+      
+      // Check for error events
+      window.addEventListener('error', (event) => {
+        log(`ERROR: ${event.message} at ${event.filename}:${event.lineno}`, 'error');
+      });
+    });
+  </script>
+</body>
+</html>

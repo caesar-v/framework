@@ -1,0 +1,306 @@
+/* Hot-Reload status and controls */
+.hot-reload-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 320px;
+  background-color: rgba(40, 42, 54, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #f8f8f2;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  max-height: 500px;
+}
+
+.hot-reload-panel.minimized {
+  max-height: 40px;
+  width: 180px;
+}
+
+.hot-reload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #44475a;
+  cursor: pointer;
+}
+
+.hot-reload-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hot-reload-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #50fa7b;
+  display: inline-block;
+}
+
+.hot-reload-indicator.inactive {
+  background-color: #ff5555;
+}
+
+.hot-reload-indicator.loading {
+  background-color: #ffb86c;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.hot-reload-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hot-reload-action {
+  background: none;
+  border: none;
+  color: #f8f8f2;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.hot-reload-action:hover {
+  color: #8be9fd;
+}
+
+.hot-reload-content {
+  padding: 12px;
+  font-size: 13px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.hot-reload-section {
+  margin-bottom: 16px;
+}
+
+.hot-reload-section h3 {
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  color: #bd93f9;
+  font-weight: 600;
+}
+
+.hot-reload-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hot-reload-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.hot-reload-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.hot-reload-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #6272a4;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.hot-reload-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .hot-reload-toggle-slider {
+  background-color: #50fa7b;
+}
+
+input:checked + .hot-reload-toggle-slider:before {
+  transform: translateX(16px);
+}
+
+.hot-reload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.hot-reload-info-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.hot-reload-info-label {
+  color: #8be9fd;
+}
+
+.hot-reload-btn {
+  background-color: #6272a4;
+  color: #f8f8f2;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hot-reload-btn:hover {
+  background-color: #8be9fd;
+  color: #282a36;
+}
+
+.hot-reload-changes {
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid #44475a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-top: 8px;
+}
+
+.hot-reload-change-item {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(68, 71, 90, 0.5);
+  font-size: 11px;
+}
+
+.hot-reload-change-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.hot-reload-change-path {
+  color: #ffb86c;
+  word-break: break-all;
+}
+
+.hot-reload-change-time {
+  color: #6272a4;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* Hot-reload notification */
+.hot-reload-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(40, 42, 54, 0.9);
+  color: #f8f8f2;
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  animation: slideIn 0.3s forwards;
+  max-width: 400px;
+  transform: translateX(100%);
+}
+
+@keyframes slideIn {
+  to {
+    transform: translateX(0);
+  }
+}
+
+.hot-reload-notification.slide-out {
+  animation: slideOut 0.3s forwards;
+}
+
+@keyframes slideOut {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.hot-reload-notification-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #50fa7b;
+}
+
+.hot-reload-notification-content {
+  flex: 1;
+}
+
+.hot-reload-notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 4px 0;
+}
+
+.hot-reload-notification-message {
+  font-size: 12px;
+  margin: 0;
+}
+
+.hot-reload-notification-close {
+  background: none;
+  border: none;
+  color: #6272a4;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.hot-reload-notification-close:hover {
+  color: #ff5555;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hot-reload-panel {
+    width: 260px;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .hot-reload-panel.minimized {
+    width: 160px;
+  }
+}

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Framework - Admin Panel</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components/admin-panel.css">
+    <script type="module" src="js/admin/admin-panel.js"></script>
+</head>
+<body class="admin-panel">
+    <header class="admin-header">
+        <div class="admin-logo">
+            <h1>Game Framework</h1>
+            <span class="admin-subtitle">Admin Panel</span>
+        </div>
+        <nav class="admin-nav">
+            <ul>
+                <li><a href="#games" class="active" data-tab="games">Games</a></li>
+                <li><a href="#settings" data-tab="settings">Settings</a></li>
+                <li><a href="#analytics" data-tab="analytics">Analytics</a></li>
+                <li><a href="index.html" class="back-to-games">Back to Games</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="admin-content">
+        <!-- Games Tab -->
+        <section id="games" class="admin-tab active">
+            <div class="admin-controls">
+                <h2>Game Management</h2>
+                <div class="admin-actions">
+                    <button id="refresh-games" class="admin-btn primary">Refresh Games</button>
+                    <button id="upload-game" class="admin-btn secondary">Upload New Game</button>
+                </div>
+            </div>
+
+            <div class="game-grid">
+                <!-- Game cards will be dynamically inserted here -->
+            </div>
+
+            <!-- Game upload modal -->
+            <div id="upload-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&times;</span>
+                    <h2>Upload New Game</h2>
+                    <form id="upload-game-form">
+                        <div class="form-group">
+                            <label for="game-manifest">Game Manifest (JSON):</label>
+                            <textarea id="game-manifest" placeholder="Paste your game manifest here..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="game-file">Or upload manifest file:</label>
+                            <input type="file" id="game-file" accept=".json">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="admin-btn secondary cancel-upload">Cancel</button>
+                            <button type="submit" class="admin-btn primary">Upload Game</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Game edit modal -->
+            <div id="edit-game-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&times;</span>
+                    <h2>Edit Game Configuration</h2>
+                    <form id="edit-game-form">
+                        <input type="hidden" id="edit-game-id">
+                        
+                        <div class="form-group">
+                            <label for="edit-game-name">Game Name:</label>
+                            <input type="text" id="edit-game-name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-game-description">Description:</label>
+                            <textarea id="edit-game-description"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-game-min-bet">Min Bet:</label>
+                                <input type="number" id="edit-game-min-bet" min="1" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-game-max-bet">Max Bet:</label>
+                                <input type="number" id="edit-game-max-bet" min="1" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-game-default-bet">Default Bet:</label>
+                                <input type="number" id="edit-game-default-bet" min="1" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-game-risk">Default Risk Level:</label>
+                            <select id="edit-game-risk" required>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-game-enabled">Game Enabled:</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="edit-game-enabled" class="toggle-input">
+                                <label for="edit-game-enabled" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="admin-btn dangerous" id="delete-game">Delete Game</button>
+                            <div class="right-actions">
+                                <button type="button" class="admin-btn secondary cancel-edit">Cancel</button>
+                                <button type="submit" class="admin-btn primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section id="settings" class="admin-tab">
+            <h2>Global Settings</h2>
+            
+            <form id="global-settings-form">
+                <div class="settings-section">
+                    <h3>Game Framework Settings</h3>
+                    
+                    <div class="form-group">
+                        <label for="default-currency">Default Currency:</label>
+                        <input type="text" id="default-currency" value="$">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="default-balance">Default Balance:</label>
+                        <input type="number" id="default-balance" value="1000" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="default-theme">Default Theme:</label>
+                        <select id="default-theme">
+                            <option value="default">Default</option>
+                            <option value="classic">Classic</option>
+                            <option value="neon">Neon</option>
+                            <option value="pirate">Pirate</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>System Settings</h3>
+                    
+                    <div class="form-group">
+                        <label for="server-restart-detection">Server Restart Detection:</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="server-restart-detection" class="toggle-input" checked>
+                            <label for="server-restart-detection" class="toggle-label"></label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="auto-recovery">Automatic Error Recovery:</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="auto-recovery" class="toggle-input" checked>
+                            <label for="auto-recovery" class="toggle-label"></label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="debug-mode">Debug Mode:</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="debug-mode" class="toggle-input">
+                            <label for="debug-mode" class="toggle-label"></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="admin-btn dangerous" id="reset-settings">Reset to Defaults</button>
+                    <button type="submit" class="admin-btn primary">Save Settings</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Analytics Tab -->
+        <section id="analytics" class="admin-tab">
+            <h2>Game Analytics</h2>
+            
+            <div class="analytics-controls">
+                <div class="date-range">
+                    <label for="date-range">Time Period:</label>
+                    <select id="date-range">
+                        <option value="today">Today</option>
+                        <option value="week" selected>Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                
+                <button id="export-data" class="admin-btn secondary">Export Data</button>
+            </div>
+            
+            <div class="analytics-dashboard">
+                <div class="analytics-card">
+                    <h3>Game Popularity</h3>
+                    <div class="chart-container">
+                        <canvas id="popularity-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <h3>Win/Loss Ratio</h3>
+                    <div class="chart-container">
+                        <canvas id="winloss-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <h3>Average Bet Size</h3>
+                    <div class="chart-container">
+                        <canvas id="bet-size-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <h3>Session Length</h3>
+                    <div class="chart-container">
+                        <canvas id="session-length-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analytics-table">
+                <h3>Detailed Game Stats</h3>
+                <table id="game-stats">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Sessions</th>
+                            <th>Total Bets</th>
+                            <th>Win Rate</th>
+                            <th>Avg. Bet</th>
+                            <th>Total Won</th>
+                            <th>Total Lost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="admin-footer">
+        <p>&copy; 2023 Game Framework Admin Panel</p>
+    </footer>
+
+    <!-- Game card template -->
+    <template id="game-card-template">
+        <div class="game-card" data-game-id="">
+            <div class="game-thumbnail">
+                <img src="" alt="Game Thumbnail">
+                <div class="game-status"></div>
+            </div>
+            <div class="game-info">
+                <h3 class="game-title"></h3>
+                <p class="game-description"></p>
+                <div class="game-meta">
+                    <span class="game-category"></span>
+                    <span class="game-version"></span>
+                </div>
+            </div>
+            <div class="game-actions">
+                <button class="admin-btn secondary edit-game">Edit</button>
+                <button class="admin-btn primary play-game">Play</button>
+            </div>
+        </div>
+    </template>
+</body>
+</html>

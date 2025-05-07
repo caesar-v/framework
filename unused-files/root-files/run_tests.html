@@ -78,13 +78,7 @@
   <!-- Load the module index to provide initialization helpers -->
   <script src="js/core/index.js"></script>
   
-  <!-- Load the Abstract Base Game first -->
-  <script src="games/AbstractBaseGame.js"></script>
-  
-  <!-- Base game must be loaded before game implementations -->
-  <script src="games/baseGame.js"></script>
-  
-  <!-- Game loader - depends on all game classes -->
+  <!-- Game loader - load games directly without adapter pattern -->
   <script src="js/core/gameLoader.js"></script>
   
   <!-- Test Suite -->

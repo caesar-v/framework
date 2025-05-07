@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Framework Test Page</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff9900;
+    }
+    .test-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .test-panel {
+      background-color: #333;
+      border-radius: 8px;
+      padding: 20px;
+      width: 45%;
+      min-width: 300px;
+      flex-grow: 1;
+      margin-bottom: 20px;
+    }
+    .game-container {
+      height: 400px;
+      background-color: #1a5d1a;
+      border: 2px solid #0d3d0d;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .error {
+      color: #f44336;
+    }
+    #log {
+      background-color: #222;
+      padding: 10px;
+      border-radius: 4px;
+      height: 300px;
+      overflow: auto;
+      margin-top: 20px;
+      font-family: monospace;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #222;
+    }
+  </style>
+</head>
+<body>
+  <h1>Framework Test Page</h1>
+  <p>This page tests the game framework with the DOM Ready Loader.</p>
+  
+  <div class="test-container">
+    <div class="test-panel">
+      <h2>Framework Status</h2>
+      <table id="moduleTable">
+        <tr>
+          <th>Module</th>
+          <th>Status</th>
+        </tr>
+        <!-- Module status will be filled in by JavaScript -->
+      </table>
+      
+      <h2>Actions</h2>
+      <button id="loadDice">Load Dice Game</button>
+      <button id="loadCard">Load Card Game</button>
+      <button id="forceReload">Force Reload</button>
+      <button id="clearLog">Clear Log</button>
+    </div>
+    
+    <div class="test-panel">
+      <h2>Game Canvas</h2>
+      <div id="game-container" class="game-container">
+        <canvas id="game-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div id="log"></div>
+  
+  <!-- DOM Ready Loader - Ensures DOM is loaded before framework initialization -->
+  <script src="js/core/domReadyLoader.js"></script>
+  
+  <!-- Game implementations - directly implement IGame interface -->
+  <script src="games/diceGame.js"></script>
+  <script src="games/cardGame.js"></script>
+  
+  <script>
+    // Simple logging function
+    function log(message, type = 'info') {
+      const logElement = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      
+      if (type === 'success') {
+        entry.className = 'success';
+      } else if (type === 'error') {
+        entry.className = 'error';
+      }
+      
+      logElement.appendChild(entry);
+      logElement.scrollTop = logElement.scrollHeight;
+      console.log(message);
+    }
+    
+    // Check for module availability
+    function updateModuleStatus() {
+      const modules = [
+        'GameFramework',
+        'CanvasManager', 
+        'UIManager',
+        'GameStateManager', 
+        'GameLoader',
+        'frameworkStarter',
+        'gameInitializer',
+        'DiceGame',
+        'CardGame'
+      ];
+      
+      const moduleTable = document.getElementById('moduleTable');
+      
+      // Clear existing rows except header
+      while (moduleTable.rows.length > 1) {
+        moduleTable.deleteRow(1);
+      }
+      
+      // Check each module
+      modules.forEach(moduleName => {
+        const row = moduleTable.insertRow();
+        const nameCell = row.insertCell(0);
+        const statusCell = row.insertCell(1);
+        
+        nameCell.textContent = moduleName;
+        
+        if (typeof window[moduleName] !== 'undefined') {
+          statusCell.textContent = 'Available';
+          statusCell.className = 'success';
+        } else {
+          statusCell.textContent = 'Not Available';
+          statusCell.className = 'error';
+        }
+      });
+      
+      // Also check for active game
+      const row = moduleTable.insertRow();
+      const nameCell = row.insertCell(0);
+      const statusCell = row.insertCell(1);
+      
+      nameCell.textContent = 'Active Game';
+      
+      if (window.gameLoader && window.gameLoader.activeGame) {
+        statusCell.textContent = 'Yes';
+        statusCell.className = 'success';
+      } else {
+        statusCell.textContent = 'No';
+        statusCell.className = 'error';
+      }
+    }
+    
+    // Function to load Dice Game
+    function loadDiceGame() {
+      log('Loading Dice Game...');
+      
+      if (!window.gameLoader) {
+        log('GameLoader not available', 'error');
+        return;
+      }
+      
+      if (typeof window.gameLoader.forceCreateNewGame !== 'function') {
+        log('GameLoader.forceCreateNewGame method not available', 'error');
+        return;
+      }
+      
+      try {
+        window.gameLoader.forceCreateNewGame('dice');
+        log('Dice Game loaded successfully', 'success');
+        setTimeout(updateModuleStatus, 500);
+      } catch (error) {
+        log(`Error loading Dice Game: ${error.message}`, 'error');
+      }
+    }
+    
+    // Function to load Card Game
+    function loadCardGame() {
+      log('Loading Card Game...');
+      
+      if (!window.gameLoader) {
+        log('GameLoader not available', 'error');
+        return;
+      }
+      
+      if (typeof window.gameLoader.forceCreateNewGame !== 'function') {
+        log('GameLoader.forceCreateNewGame method not available', 'error');
+        return;
+      }
+      
+      try {
+        window.gameLoader.forceCreateNewGame('card');
+        log('Card Game loaded successfully', 'success');
+        setTimeout(updateModuleStatus, 500);
+      } catch (error) {
+        log(`Error loading Card Game: ${error.message}`, 'error');
+      }
+    }
+    
+    // Function to force reload
+    function forceReload() {
+      log('Forcing framework reload...');
+      
+      if (window.domReadyLoader && typeof window.domReadyLoader.recover === 'function') {
+        log('Using DOM Ready Loader to recover');
+        
+        window.domReadyLoader.recover()
+          .then(success => {
+            if (success) {
+              log('Framework recovered successfully', 'success');
+            } else {
+              log('Framework recovery failed', 'error');
+            }
+            setTimeout(updateModuleStatus, 500);
+          })
+          .catch(error => {
+            log(`Error during recovery: ${error.message}`, 'error');
+            setTimeout(updateModuleStatus, 500);
+          });
+      } else {
+        log('DOM Ready Loader not available', 'error');
+      }
+    }
+    
+    // Set up event listeners when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      log('Page loaded, waiting for framework initialization...');
+      
+      // Set up button event listeners
+      document.getElementById('loadDice').addEventListener('click', loadDiceGame);
+      document.getElementById('loadCard').addEventListener('click', loadCardGame);
+      document.getElementById('forceReload').addEventListener('click', forceReload);
+      document.getElementById('clearLog').addEventListener('click', () => {
+        document.getElementById('log').innerHTML = '';
+      });
+      
+      // Initialize DOM Ready Loader
+      if (window.domReadyLoader) {
+        log('DOM Ready Loader found, initializing framework');
+        
+        window.domReadyLoader.init()
+          .then(success => {
+            if (success) {
+              log('Framework initialized successfully', 'success');
+            } else {
+              log('Framework initialization failed', 'error');
+            }
+            setTimeout(updateModuleStatus, 500);
+          })
+          .catch(error => {
+            log(`Error during initialization: ${error.message}`, 'error');
+            setTimeout(updateModuleStatus, 500);
+          });
+      } else {
+        log('DOM Ready Loader not found', 'error');
+        setTimeout(updateModuleStatus, 500);
+      }
+      
+      // Update module status every 3 seconds
+      setInterval(updateModuleStatus, 3000);
+    });
+    
+    // Error handler
+    window.addEventListener('error', function(event) {
+      log(`ERROR: ${event.message}`, 'error');
+    });
+  </script>
+</body>
+</html>

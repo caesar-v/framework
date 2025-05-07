@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Framework Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff0;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #log {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 20px;
+      height: 300px;
+      overflow: auto;
+      font-family: monospace;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .error {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <h1>Core Framework Test</h1>
+  <p>This page tests the core framework components one by one.</p>
+  
+  <div>
+    <button id="loadConfig">1. Load Config</button>
+    <button id="loadHelpers">2. Load Helpers</button>
+    <button id="loadCanvas">3. Load CanvasManager</button>
+    <button id="loadUI">4. Load UIManager</button>
+    <button id="loadGSM">5. Load GameStateManager</button>
+    <button id="loadGameFramework">6. Load GameFramework</button>
+    <button id="loadGameLoader">7. Load GameLoader</button>
+    <button id="checkAll">Check All Classes</button>
+    <button id="clearLog">Clear Log</button>
+  </div>
+  
+  <div id="log"></div>
+  
+  <script>
+    // Simple logging function
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      
+      if (type === 'success') {
+        entry.className = 'success';
+      } else if (type === 'error') {
+        entry.className = 'error';
+      }
+      
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(message);
+    }
+    
+    // Load a script and return a promise
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => {
+          log(`Successfully loaded ${src}`, 'success');
+          resolve();
+        };
+        script.onerror = (error) => {
+          log(`Failed to load ${src}: ${error}`, 'error');
+          reject(error);
+        };
+        document.head.appendChild(script);
+      });
+    }
+    
+    // Error tracking
+    window.addEventListener('error', function(e) {
+      log(`ERROR: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+    });
+    
+    // Check for available classes
+    function checkClasses() {
+      log('Checking available classes...');
+      
+      const classes = [
+        'GameFramework', 'DiceGame', 'CardGame', 'GameLoader', 
+        'UIManager', 'CanvasManager', 'GameStateManager'
+      ];
+      
+      classes.forEach(className => {
+        const available = typeof window[className] !== 'undefined';
+        log(`${className}: ${available ? 'Available' : 'Not available'}`, available ? 'success' : 'error');
+      });
+    }
+    
+    // Clear log
+    document.getElementById('clearLog').addEventListener('click', function() {
+      document.getElementById('log').innerHTML = '';
+    });
+    
+    // Load Config
+    document.getElementById('loadConfig').addEventListener('click', async function() {
+      log('Loading config.js...');
+      try {
+        await loadScript('js/config.js');
+        log('Config loaded successfully', 'success');
+      } catch (e) {
+        log(`Error loading config: ${e}`, 'error');
+      }
+    });
+    
+    // Load Helpers
+    document.getElementById('loadHelpers').addEventListener('click', async function() {
+      log('Loading helpers.js...');
+      try {
+        await loadScript('js/utils/helpers.js');
+        log('Helpers loaded successfully', 'success');
+      } catch (e) {
+        log(`Error loading helpers: ${e}`, 'error');
+      }
+    });
+    
+    // Load CanvasManager
+    document.getElementById('loadCanvas').addEventListener('click', async function() {
+      log('Loading CanvasManager.js...');
+      try {
+        await loadScript('js/core/CanvasManager.js');
+        log('CanvasManager loaded successfully', 'success');
+        
+        // Test if class is defined
+        if (typeof CanvasManager !== 'undefined') {
+          log('CanvasManager class is available', 'success');
+        } else {
+          log('CanvasManager class is not defined', 'error');
+        }
+      } catch (e) {
+        log(`Error loading CanvasManager: ${e}`, 'error');
+      }
+    });
+    
+    // Load UIManager
+    document.getElementById('loadUI').addEventListener('click', async function() {
+      log('Loading UIManager.js...');
+      try {
+        await loadScript('js/core/UIManager.js');
+        log('UIManager loaded successfully', 'success');
+        
+        // Test if class is defined
+        if (typeof UIManager !== 'undefined') {
+          log('UIManager class is available', 'success');
+        } else {
+          log('UIManager class is not defined', 'error');
+        }
+      } catch (e) {
+        log(`Error loading UIManager: ${e}`, 'error');
+      }
+    });
+    
+    // Load GameStateManager
+    document.getElementById('loadGSM').addEventListener('click', async function() {
+      log('Loading GameStateManager.js...');
+      try {
+        await loadScript('js/core/GameStateManager.js');
+        log('GameStateManager loaded successfully', 'success');
+        
+        // Test if class is defined
+        if (typeof GameStateManager !== 'undefined') {
+          log('GameStateManager class is available', 'success');
+        } else {
+          log('GameStateManager class is not defined', 'error');
+        }
+      } catch (e) {
+        log(`Error loading GameStateManager: ${e}`, 'error');
+      }
+    });
+    
+    // Load GameFramework
+    document.getElementById('loadGameFramework').addEventListener('click', async function() {
+      log('Loading gameFramework.js...');
+      try {
+        // Ensure prerequisites are loaded
+        if (typeof CanvasManager === 'undefined') {
+          await loadScript('js/core/CanvasManager.js');
+        }
+        if (typeof UIManager === 'undefined') {
+          await loadScript('js/core/UIManager.js');
+        }
+        
+        await loadScript('js/core/gameFramework.js');
+        log('GameFramework loaded successfully', 'success');
+        
+        // Test if class is defined
+        if (typeof GameFramework !== 'undefined') {
+          log('GameFramework class is available', 'success');
+          
+          // Try creating an instance
+          try {
+            const framework = new GameFramework({gameTitle: 'Test Game'});
+            log('Successfully created GameFramework instance', 'success');
+          } catch (instanceError) {
+            log(`Error creating GameFramework instance: ${instanceError}`, 'error');
+          }
+        } else {
+          log('GameFramework class is not defined', 'error');
+        }
+      } catch (e) {
+        log(`Error loading GameFramework: ${e}`, 'error');
+      }
+    });
+    
+    // Load GameLoader
+    document.getElementById('loadGameLoader').addEventListener('click', async function() {
+      log('Loading gameLoader.js...');
+      try {
+        // Ensure prerequisites are loaded
+        if (typeof GameFramework === 'undefined') {
+          await loadScript('js/core/gameFramework.js');
+        }
+        
+        await loadScript('js/core/gameLoader.js');
+        log('GameLoader loaded successfully', 'success');
+        
+        // Test if class is defined
+        if (typeof GameLoader !== 'undefined') {
+          log('GameLoader class is available', 'success');
+          
+          // Don't try creating an instance here as it has too many dependencies
+        } else {
+          log('GameLoader class is not defined', 'error');
+        }
+      } catch (e) {
+        log(`Error loading GameLoader: ${e}`, 'error');
+      }
+    });
+    
+    // Check all classes
+    document.getElementById('checkAll').addEventListener('click', function() {
+      checkClasses();
+    });
+    
+    // Initialize on page load
+    window.addEventListener('load', function() {
+      log('Page loaded');
+      log('Click the buttons in sequence to load core framework components.');
+    });
+  </script>
+</body>
+</html>

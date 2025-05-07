@@ -82,7 +82,11 @@
       // Загрузить скрипты параллельно
       Promise.all([
         loadScript('js/test/TestEnvironment.js'),
-        loadScript('js/test/TestRunner.js')
+        loadScript('js/test/TestRunner.js'),
+        loadScript('js/test/IGameTester.js').catch(err => {
+          console.warn('IGameTester script not loaded, IGame compatibility tests will be skipped', err);
+          return Promise.resolve(); // Продолжаем даже если IGameTester не загружен
+        })
       ])
       .then(() => {
         console.log('All test scripts loaded');

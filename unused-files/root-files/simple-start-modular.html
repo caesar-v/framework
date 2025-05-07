@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modular Game Framework</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0d1117;
+      color: #c9d1d9;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #58a6ff;
+      text-align: center;
+    }
+    
+    .game-container {
+      background-color: #161b22;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    canvas {
+      width: 100%;
+      height: 400px;
+      background-color: #0d1117;
+      border-radius: 4px;
+      display: block;
+    }
+    
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      background-color: #238636;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    button:hover {
+      background-color: #2ea043;
+    }
+    
+    select {
+      background-color: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 7px 16px;
+      cursor: pointer;
+    }
+    
+    select:focus {
+      border-color: #58a6ff;
+      outline: none;
+    }
+    
+    .info {
+      margin-top: 20px;
+      background-color: #161b22;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    
+    #status-message {
+      background-color: #0d1117;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+    
+    .balance {
+      font-size: 18px;
+      font-weight: bold;
+      color: #58a6ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Modular Game Framework</h1>
+    
+    <div class="game-container">
+      <canvas id="game-canvas"></canvas>
+      
+      <div class="controls">
+        <div class="control-group">
+          <button id="spin-button">SPIN</button>
+          <select id="game-select">
+            <option value="dice">Dice Game</option>
+            <option value="card">Card Game</option>
+          </select>
+        </div>
+        
+        <div class="balance">Balance: <span id="balance-display">1000</span></div>
+      </div>
+      
+      <div id="status-message"></div>
+    </div>
+    
+    <div class="info">
+      <p>This is a modular version of the game framework with components split into separate files:</p>
+      <ul>
+        <li>Canvas management is extracted to <code>canvasManager.js</code></li>
+        <li>Game management is handled by <code>gameManager.js</code></li>
+        <li>Each game is in its own module file</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Load modules in order -->
+  <script src="js/simple/canvasManager.js"></script>
+  <script src="js/simple/gameManager.js"></script>
+  <script src="js/simple/diceGame.js"></script>
+  <script src="js/simple/cardGame.js"></script>
+  
+  <!-- Initialize the framework -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create and initialize game manager
+      const gameManager = new GameManager();
+      
+      // Register games
+      gameManager.registerGame('dice', createDiceGame);
+      gameManager.registerGame('card', createCardGame);
+      
+      // Initialize game manager
+      if (gameManager.init()) {
+        // Load default game
+        gameManager.loadGame('dice');
+      }
+    });
+  </script>
+</body>
+</html>

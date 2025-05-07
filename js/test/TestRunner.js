@@ -47,7 +47,104 @@ class TestRunner {
     this.registerTest('Inheritance', this.createInheritanceTest());
     this.registerTest('Game State Manager', this.createGameStateManagerTest());
     
+    // Регистрируем тест совместимости с IGame, если доступен
+    if (typeof window.IGameTester !== 'undefined') {
+      this.registerTest('IGame Compatibility', this.createIGameCompatibilityTest(), { priority: -1 });
+    }
+    
     console.log(`Registered ${this.tests.length} tests`);
+  }
+  
+  /**
+   * Создать адаптер для теста совместимости с интерфейсом IGame
+   * @returns {Function} Функция теста
+   * @private
+   */
+  createIGameCompatibilityTest() {
+    return async (container) => {
+      console.log('Running IGame compatibility test in isolated environment');
+      
+      // Убедиться, что IGameTester загружен
+      if (typeof IGameTester === 'undefined') {
+        throw new Error('IGameTester not loaded - cannot run test');
+      }
+      
+      // Создать тестер
+      const tester = new IGameTester({
+        container: container,
+        verbose: false // Выключаем подробный вывод для интеграции с TestRunner
+      });
+      
+      // Обнаружить доступные игры
+      const availableGames = [];
+      
+      // Проверяем наличие DiceGame
+      if (typeof DiceGame !== 'undefined') {
+        availableGames.push({
+          name: 'DiceGame',
+          constructor: DiceGame
+        });
+      }
+      
+      // Проверяем наличие CardGame
+      if (typeof CardGame !== 'undefined') {
+        availableGames.push({
+          name: 'CardGame',
+          constructor: CardGame
+        });
+      }
+      
+      // Проверить, есть ли игры для тестирования
+      if (availableGames.length === 0) {
+        throw new Error('No games available for IGame compatibility testing');
+      }
+      
+      // Результаты для всех игр
+      const results = {
+        total: availableGames.length,
+        passed: 0,
+        failed: 0,
+        gameResults: {}
+      };
+      
+      // Тестировать каждую игру
+      for (const game of availableGames) {
+        console.log(`Testing ${game.name} for IGame compatibility`);
+        
+        try {
+          // Настроить тестер для игры
+          tester.setGame(game.constructor);
+          
+          // Запустить тесты
+          const gameResult = await tester.runAllTests();
+          
+          // Сохранить результаты
+          results.gameResults[game.name] = gameResult;
+          
+          // Обновить счетчики
+          if (gameResult.failed === 0) {
+            results.passed++;
+          } else {
+            results.failed++;
+          }
+        } catch (error) {
+          console.error(`Error testing ${game.name}:`, error);
+          results.gameResults[game.name] = {
+            error: error.message,
+            failed: 1,
+            passed: 0
+          };
+          results.failed++;
+        }
+      }
+      
+      // Проверить общий результат
+      if (results.failed > 0) {
+        throw new Error(`IGame compatibility test failed: ${results.failed} of ${results.total} games failed`);
+      }
+      
+      return results;
+    };
   }
 
   /**
@@ -393,8 +490,6 @@ class TestRunner {
         UIManager: typeof UIManager !== 'undefined',
         GameStateManager: typeof GameStateManager !== 'undefined',
         GameFramework: typeof GameFramework !== 'undefined',
-        AbstractBaseGame: typeof AbstractBaseGame !== 'undefined',
-        BaseGame: typeof BaseGame !== 'undefined',
         DiceGame: typeof DiceGame !== 'undefined',
         CardGame: typeof CardGame !== 'undefined'
       };
@@ -402,7 +497,7 @@ class TestRunner {
       console.log('Module load test results:', modules);
       
       // Проверить критические модули
-      const criticalModules = ['GameFramework', 'AbstractBaseGame', 'BaseGame'];
+      const criticalModules = ['GameFramework'];
       const criticalFailures = criticalModules.filter(module => !modules[module]);
       
       if (criticalFailures.length > 0) {
@@ -700,41 +795,49 @@ class TestRunner {
   }
 
   /**
-   * Создать адаптер для теста наследования
+   * Создать адаптер для теста IGame интерфейса
    * @returns {Function} Функция теста
    * @private
    */
   createInheritanceTest() {
     return async (container) => {
-      console.log('Running inheritance test in isolated environment');
+      console.log('Running IGame interface test in isolated environment');
       
       // Проверить, загружены ли необходимые классы
-      if (typeof AbstractBaseGame === 'undefined' || 
-          typeof BaseGame === 'undefined' ||
-          typeof DiceGame === 'undefined' ||
+      if (typeof DiceGame === 'undefined' ||
           typeof CardGame === 'undefined') {
         throw new Error('Required game classes not loaded - cannot run test');
       }
       
-      // Тестировать иерархию наследования
+      // Тестировать интерфейс IGame
       const testResults = {};
       
-      // Тест BaseGame наследует AbstractBaseGame
-      testResults.baseGameExtendsAbstractBaseGame = BaseGame.prototype instanceof AbstractBaseGame;
+      // Создаем экземпляры игр
+      const diceGame = new DiceGame();
+      const cardGame = new CardGame();
       
-      // Тест DiceGame наследует BaseGame
-      testResults.diceGameExtendsBaseGame = DiceGame.prototype instanceof BaseGame;
+      // Проверяем наличие требуемых методов IGame
+      const requiredMethods = [
+        'initialize', 'start', 'pause', 'resume', 'destroy',
+        'performAction', 'calculatePotentialWin', 'getState', 'setState'
+      ];
       
-      // Тест CardGame наследует BaseGame
-      testResults.cardGameExtendsBaseGame = CardGame.prototype instanceof BaseGame;
+      // Проверяем наличие методов в DiceGame
+      testResults.diceGameImplementsIGame = requiredMethods.every(
+        method => typeof diceGame[method] === 'function'
+      );
+      
+      // Проверяем наличие методов в CardGame
+      testResults.cardGameImplementsIGame = requiredMethods.every(
+        method => typeof cardGame[method] === 'function'
+      );
       
       // Проверить успешность теста
-      const success = testResults.baseGameExtendsAbstractBaseGame && 
-                     testResults.diceGameExtendsBaseGame && 
-                     testResults.cardGameExtendsBaseGame;
+      const success = testResults.diceGameImplementsIGame && 
+                      testResults.cardGameImplementsIGame;
       
       if (!success) {
-        throw new Error('Inheritance test failed: ' + JSON.stringify(testResults));
+        throw new Error('IGame interface test failed: ' + JSON.stringify(testResults));
       }
       
       return testResults;

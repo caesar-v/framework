@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Game Loader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff0;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #log {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 20px;
+      height: 200px;
+      overflow: auto;
+      font-family: monospace;
+    }
+    .game-container {
+      margin-top: 20px;
+      width: 100%;
+      height: 400px;
+      background-color: #1a5d1a;
+      border: 2px solid #0d3d0d;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Emergency Game Loader</h1>
+  <p>This is a minimal loader to diagnose issues with the games framework.</p>
+  
+  <div>
+    <button id="loadDice">Load Dice Game</button>
+    <button id="loadCard">Load Card Game</button>
+    <button id="checkClasses">Check Available Classes</button>
+    <button id="clearLog">Clear Log</button>
+  </div>
+  
+  <div id="log"></div>
+  
+  <div id="game-container" class="game-container"></div>
+  
+  <script>
+    // Simple logging function
+    function log(message) {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(message);
+    }
+    
+    // Error tracking
+    window.addEventListener('error', function(e) {
+      log(`ERROR: ${e.message} at ${e.filename}:${e.lineno}`);
+    });
+    
+    // Check for available classes
+    document.getElementById('checkClasses').addEventListener('click', function() {
+      log('Checking available classes...');
+      
+      const classes = [
+        'GameFramework', 'DiceGame', 'CardGame', 'GameLoader', 
+        'UIManager', 'CanvasManager', 'GameStateManager'
+      ];
+      
+      classes.forEach(className => {
+        log(`${className}: ${typeof window[className] !== 'undefined' ? 'Available' : 'Not available'}`);
+      });
+    });
+    
+    // Clear log
+    document.getElementById('clearLog').addEventListener('click', function() {
+      document.getElementById('log').innerHTML = '';
+    });
+    
+    // Load dice game
+    document.getElementById('loadDice').addEventListener('click', function() {
+      log('Attempting to load Dice Game...');
+      loadGame('DiceGame');
+    });
+    
+    // Load card game
+    document.getElementById('loadCard').addEventListener('click', function() {
+      log('Attempting to load Card Game...');
+      loadGame('CardGame');
+    });
+    
+    // Game loading function
+    function loadGame(className) {
+      try {
+        // Check if class is available
+        if (typeof window[className] === 'undefined') {
+          log(`ERROR: ${className} is not defined`);
+          
+          // Try dynamically loading the game script
+          const script = document.createElement('script');
+          script.src = `games/${className.toLowerCase()}.js`;
+          script.onload = function() {
+            log(`Successfully loaded ${className} script`);
+            initializeGame(className);
+          };
+          script.onerror = function() {
+            log(`Failed to load ${className} script`);
+          };
+          document.head.appendChild(script);
+          return;
+        }
+        
+        initializeGame(className);
+      } catch (e) {
+        log(`ERROR: ${e.message}`);
+      }
+    }
+    
+    // Initialize a game
+    function initializeGame(className) {
+      try {
+        // Get container
+        const container = document.getElementById('game-container');
+        
+        // Clear container
+        container.innerHTML = '';
+        
+        log(`Creating new ${className} instance`);
+        const GameClass = window[className];
+        const game = new GameClass();
+        
+        log('Initializing game...');
+        
+        // Initialize the game
+        game.initialize({
+          container: container,
+          bet: 10,
+          riskLevel: 'medium',
+          theme: {name: 'default'},
+          layout: {width: container.clientWidth, height: container.clientHeight}
+        }).then(() => {
+          log('Game initialization successful');
+          
+          // Start the game
+          log('Starting game...');
+          return game.start();
+        }).then(() => {
+          log('Game started successfully');
+          
+          // Store reference to active game
+          window.activeGame = game;
+        }).catch(error => {
+          log(`ERROR during game initialization/start: ${error.message}`);
+        });
+      } catch (e) {
+        log(`ERROR creating game: ${e.message}`);
+      }
+    }
+    
+    // Initialize on page load
+    window.addEventListener('load', function() {
+      log('Page loaded');
+      log('Ready to load games. Click one of the buttons above.');
+    });
+  </script>
+  
+  <!-- Load required game classes -->
+  <script src="games/diceGame.js"></script>
+  <script src="games/cardGame.js"></script>
+</body>
+</html>

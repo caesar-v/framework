@@ -1,0 +1,169 @@
+/* Classic Theme CSS file for Playtagon Games */
+
+/* Base Color Variables */
+:root {
+  /* Main Colors */
+  --color-primary: #121e2c;
+  --color-secondary: #1c2a3a;
+  --color-accent: #ffcc00;
+  --color-success: #4caf50;
+  --color-warning: #ff9800;
+  --color-error: #f44336;
+  --color-border: #2c3e50;
+  
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0b0c5;
+  
+  /* Game Colors */
+  --color-win: #4caf50;
+  --color-lose: #f44336;
+  --color-draw: #ff9800;
+  
+  /* UI Elements */
+  --border-radius: 6px;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 15px rgba(0, 0, 0, 0.2);
+  
+  /* Transitions */
+  --transition-speed: 0.2s;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Apply Classic Theme */
+.theme-classic {
+  /* Backgrounds */
+  --bg-primary: var(--color-primary);
+  --bg-secondary: var(--color-secondary);
+  --bg-accent: var(--color-accent);
+  
+  /* Text Colors */
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-accent: var(--color-accent);
+  
+  /* Borders */
+  --border-color: var(--color-border);
+  --border-width: 1px;
+  
+  /* Buttons */
+  --btn-primary-bg: var(--color-accent);
+  --btn-primary-text: #121e2c;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--color-accent);
+  --btn-secondary-border: var(--color-accent);
+  
+  /* Card Styling */
+  --card-bg: var(--color-secondary);
+  --card-border: none;
+  --card-shadow: var(--shadow);
+  
+  /* Game Thumbnails */
+  --thumbnail-bg: linear-gradient(to bottom, rgba(255, 204, 0, 0.2), var(--color-primary));
+  --thumbnail-hover-scale: 1.05;
+  --thumbnail-border-radius: var(--border-radius);
+  --thumbnail-shadow: var(--shadow);
+  --thumbnail-hover-shadow: var(--shadow-lg);
+  
+  /* Navigation */
+  --nav-bg: var(--color-secondary);
+  --nav-text: var(--color-text-secondary);
+  --nav-active-text: var(--color-accent);
+  --nav-active-border: var(--color-accent);
+  
+  /* Slider Controls */
+  --slider-dot-size: 8px;
+  --slider-dot-active-bg: var(--color-accent);
+  --slider-dot-inactive-bg: var(--color-text-secondary);
+  --slider-arrow-bg: rgba(28, 42, 58, 0.9);
+  --slider-arrow-text: var(--color-text-primary);
+  --slider-arrow-hover-bg: var(--color-accent);
+  --slider-arrow-hover-text: #121e2c;
+}
+
+/* Custom Scrollbar for Classic Theme */
+.theme-classic *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.theme-classic *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-classic *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 204, 0, 0.3);
+  border-radius: 3px;
+}
+
+.theme-classic *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 204, 0, 0.5);
+}
+
+/* Game Cards in Classic Theme */
+.theme-classic .game-card {
+  background: var(--card-bg);
+  border-radius: var(--thumbnail-border-radius);
+  box-shadow: var(--thumbnail-shadow);
+  transition: all var(--transition-speed) var(--transition-ease);
+  overflow: hidden;
+}
+
+.theme-classic .game-card:hover {
+  transform: scale(var(--thumbnail-hover-scale));
+  box-shadow: var(--thumbnail-hover-shadow);
+}
+
+.theme-classic .game-image {
+  background: var(--thumbnail-bg);
+}
+
+/* Buttons in Classic Theme */
+.theme-classic .btn {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  padding: 0.5rem 1rem;
+  transition: all var(--transition-speed) ease;
+}
+
+.theme-classic .btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.theme-classic .btn-outline {
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+}
+
+/* Slider Controls in Classic Theme */
+.theme-classic .slider-dot {
+  width: var(--slider-dot-size);
+  height: var(--slider-dot-size);
+  border-radius: 50%;
+  background-color: var(--slider-dot-inactive-bg);
+  opacity: 0.5;
+  transition: all var(--transition-speed) ease;
+}
+
+.theme-classic .slider-dot.active,
+.theme-classic .slider-dot:hover {
+  background-color: var(--slider-dot-active-bg);
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.theme-classic .slider-arrow {
+  background-color: var(--slider-arrow-bg);
+  color: var(--slider-arrow-text);
+  box-shadow: var(--shadow);
+  border-radius: 50%;
+}
+
+.theme-classic .slider-arrow:hover:not(:disabled) {
+  background-color: var(--slider-arrow-hover-bg);
+  color: var(--slider-arrow-hover-text);
+}

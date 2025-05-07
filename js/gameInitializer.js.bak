@@ -1,0 +1,1087 @@
+/**
+ * Game Initializer - Dedicated module to ensure reliable game initialization
+ * This is a standalone module that ensures the game is always initialized, 
+ * even if there are issues with the standard initialization process.
+ */
+
+(function() {
+  console.log('Game Initializer module loading...');
+  
+  // Configuration
+  const CONFIG = {
+    // Delay before first initialization attempt
+    INITIAL_DELAY: 50,
+    
+    // Interval for checking if game is loaded
+    CHECK_INTERVAL: 200,
+    
+    // Maximum number of initialization attempts
+    MAX_ATTEMPTS: 15,
+    
+    // Default game to load when all else fails
+    DEFAULT_GAME: 'dice',
+    
+    // Timeout for each initialization attempt (ms)
+    ATTEMPT_TIMEOUT: 1000,
+    
+    // Delay between server restart detection attempts
+    SERVER_RESTART_CHECK_INTERVAL: 2000,
+    
+    // How many server restart checks to perform
+    SERVER_RESTART_CHECK_MAX: 5
+  };
+  
+  // State tracking
+  let initialized = false;
+  let attempts = 0;
+  let checkIntervalId = null;
+  let serverRestartDetected = false;
+  let serverRestartChecks = 0;
+  let lastLoadTimeStamp = new Date().getTime();
+  
+  /**
+   * Detect if a server restart has occurred
+   * This is determined by checking the load timestamp against session storage
+   */
+  function detectServerRestart() {
+    try {
+      // Get stored timestamp from previous session
+      const storedTimestamp = sessionStorage.getItem('gameInitializerTimestamp');
+      
+      if (storedTimestamp) {
+        const storedTime = parseInt(storedTimestamp, 10);
+        const currentTime = new Date().getTime();
+        
+        // If current time is significantly newer than stored time, a restart likely occurred
+        if (currentTime - storedTime > 5000) {
+          console.log('Game Initializer: Possible server restart detected');
+          serverRestartDetected = true;
+          
+          // Start server restart recovery process
+          startServerRestartRecovery();
+        }
+      }
+      
+      // Always update the timestamp for future comparisons
+      sessionStorage.setItem('gameInitializerTimestamp', lastLoadTimeStamp.toString());
+    } catch (e) {
+      console.error('Game Initializer: Error detecting server restart:', e);
+    }
+  }
+  
+  /**
+   * Start recovery process after server restart
+   */
+  function startServerRestartRecovery() {
+    console.log('Game Initializer: Starting server restart recovery process');
+    
+    // Schedule repeated checks to ensure game loads after restart
+    const restartCheckInterval = setInterval(() => {
+      serverRestartChecks++;
+      console.log(`Game Initializer: Server restart recovery check ${serverRestartChecks}/${CONFIG.SERVER_RESTART_CHECK_MAX}`);
+      
+      // Stop checking after max attempts
+      if (serverRestartChecks >= CONFIG.SERVER_RESTART_CHECK_MAX) {
+        console.log('Game Initializer: Reached maximum restart recovery attempts');
+        clearInterval(restartCheckInterval);
+        return;
+      }
+      
+      // Use lenient mode for initialization check after server restart
+      if (isGameInitialized(true)) {
+        console.log('Game Initializer: Game initialized successfully after restart (lenient check)');
+        clearInterval(restartCheckInterval);
+        
+        // Schedule a full check and recovery if needed
+        setTimeout(() => {
+          if (!isGameInitialized()) {
+            console.log('Game Initializer: Game passes lenient check but not full check, attempting to complete initialization');
+            // Try to force a redraw or update
+            if (window.gameLoader && window.gameLoader.activeGame) {
+              const framework = window.gameLoader.activeGame.framework || window.gameLoader.activeGame.game;
+              if (framework) {
+                if (typeof framework.redrawCanvas === 'function') {
+                  framework.redrawCanvas();
+                } else if (typeof framework.drawCanvas === 'function') {
+                  framework.drawCanvas();
+                }
+              }
+            }
+          }
+        }, 1000);
+        return;
+      }
+      
+      // Force game initialization
+      console.log('Game Initializer: Forcing game initialization after restart');
+      initializeGame();
+      
+    }, CONFIG.SERVER_RESTART_CHECK_INTERVAL);
+  }
+
+  /**
+   * Main initialization function
+   * This ensures a game is always loaded by systematically checking and forcing initialization
+   * using async/await pattern for better control flow
+   * @return {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function ensureGameInitialized() {
+    console.log('Game Initializer: Starting game initialization check');
+    
+    // Check for server restart
+    detectServerRestart();
+    
+    try {
+      // First try to wait for framework starter
+      if (window.frameworkStarter) {
+        console.log('Game Initializer: Using frameworkStarter');
+        
+        if (typeof window.frameworkStarter.start === 'function') {
+          // Call start method if not already called
+          if (!window.gameAPI && !window.gameLoader?.activeGame) {
+            console.log('Game Initializer: Starting framework via frameworkStarter.start()');
+            await Promise.resolve(window.frameworkStarter.start());
+            
+            // Give it a little time to complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      }
+      
+      // Immediately try to initialize if GameLoader exists but no game is active
+      if (window.gameLoader && !window.gameLoader.activeGame) {
+        console.log('Game Initializer: GameLoader exists but no active game, initializing immediately');
+        await initializeGame();
+      }
+      
+      // Set up periodic checks regardless of immediate initialization result
+      checkIntervalId = setInterval(checkGameStatus, CONFIG.CHECK_INTERVAL);
+      
+      // Set up final safety check
+      setTimeout(finalSafetyCheck, 5000);
+      
+      return true;
+    } catch (error) {
+      console.error('Game Initializer: Error during initialization:', error);
+      
+      // Still set up safety checks even if initialization fails
+      checkIntervalId = setInterval(checkGameStatus, CONFIG.CHECK_INTERVAL);
+      setTimeout(finalSafetyCheck, 5000);
+      
+      return false;
+    }
+  }
+  
+  /**
+   * Check if game is properly initialized
+   */
+  function checkGameStatus() {
+    // Stop checking after max attempts
+    if (attempts >= CONFIG.MAX_ATTEMPTS) {
+      console.warn(`Game Initializer: Reached maximum attempts (${CONFIG.MAX_ATTEMPTS}), stopping checks`);
+      clearInterval(checkIntervalId);
+      return;
+    }
+    
+    attempts++;
+    console.log(`Game Initializer: Check attempt ${attempts}/${CONFIG.MAX_ATTEMPTS}`);
+    
+    // Check if game is already initialized
+    if (isGameInitialized()) {
+      console.log('Game Initializer: Game is properly initialized, stopping checks');
+      initialized = true;
+      clearInterval(checkIntervalId);
+      return;
+    }
+    
+    // If game is not initialized after several attempts, force initialization
+    if (attempts > 2) {
+      console.warn('Game Initializer: Game not initialized after multiple checks, forcing initialization');
+      initializeGame();
+    }
+  }
+  
+  /**
+   * Check if game is properly initialized
+   * @param {boolean} lenientMode - When true, use less strict checks (for emergency recovery)
+   * @returns {boolean} True if game is initialized, false otherwise
+   */
+  function isGameInitialized(lenientMode = false) {
+    // Game is initialized if GameLoader exists and has an active game
+    if (!window.gameLoader) {
+      console.log('Game Initializer: GameLoader not found');
+      return false;
+    }
+    
+    if (!window.gameLoader.activeGame) {
+      console.log('Game Initializer: No active game found');
+      return false;
+    }
+    
+    // Check if the game framework is initialized
+    const framework = window.gameLoader.activeGame.framework || window.gameLoader.activeGame.game;
+    if (!framework) {
+      console.log('Game Initializer: Game framework not found in active game');
+      return false;
+    }
+    
+    // In lenient mode (used during recovery), we only check the basic structure
+    if (lenientMode) {
+      console.log('Game Initializer: Using lenient initialization check (recovery mode)');
+      return true;
+    }
+    
+    // Enhanced checks for proper initialization
+    
+    // Check 1: Canvas existence and visibility
+    let hasValidCanvas = false;
+    
+    if (framework.canvas) {
+      // Check if canvas has dimensions
+      if (framework.canvas.width > 0 && framework.canvas.height > 0) {
+        console.log('Game Initializer: Game has properly sized canvas');
+        hasValidCanvas = true;
+      } else {
+        console.log('Game Initializer: Game canvas has invalid dimensions');
+        if (!lenientMode) return false;
+      }
+    } else if (framework.modules && framework.modules.canvas && framework.modules.canvas.canvas) {
+      // Modern modular framework - check canvas in modules
+      const canvasModule = framework.modules.canvas;
+      if (canvasModule.canvas.width > 0 && canvasModule.canvas.height > 0) {
+        console.log('Game Initializer: Game has properly sized canvas in module');
+        hasValidCanvas = true;
+      } else {
+        console.log('Game Initializer: Game canvas in module has invalid dimensions');
+        if (!lenientMode) return false;
+      }
+    } else {
+      // No canvas found at either location
+      console.log('Game Initializer: No canvas found in game framework');
+      
+      // Try to find canvas directly in the DOM as a fallback
+      const gameCanvas = document.getElementById('game-canvas');
+      if (gameCanvas && gameCanvas.width > 0 && gameCanvas.height > 0) {
+        console.log('Game Initializer: Found valid canvas in DOM but not in framework');
+        hasValidCanvas = true;
+      } else if (!lenientMode) {
+        return false;
+      }
+    }
+    
+    // Check 2: Game state existence
+    if (!framework.state && (!framework.modules || !framework.modules.gameState)) {
+      console.log('Game Initializer: No game state found');
+      // Not a critical error, but worth noting
+    }
+    
+    // Check 3: UI elements
+    const gameCanvas = document.getElementById('game-canvas');
+    if (!gameCanvas) {
+      console.log('Game Initializer: Game canvas element not found in DOM');
+      if (!hasValidCanvas && !lenientMode) return false;
+    }
+    
+    // Check 4: Verify the game is functional by checking if it has render or update methods
+    const hasRenderMethod = typeof framework.render === 'function' || 
+                           (framework.modules && framework.modules.canvas && 
+                            typeof framework.modules.canvas.render === 'function');
+                            
+    const hasUpdateMethod = typeof framework.update === 'function' || 
+                           (framework.modules && typeof framework.modules.update === 'function');
+                           
+    if (!hasRenderMethod && !hasUpdateMethod) {
+      console.log('Game Initializer: Game lacks render or update methods');
+      if (!lenientMode) return false;
+    }
+    
+    // All checks passed
+    console.log('Game Initializer: Game is properly initialized with all required components');
+    return true;
+  }
+  
+  /**
+   * Force game initialization with full async/await support
+   * @param {boolean} isServerRestart - Whether this is being called after a server restart
+   * @return {Promise<boolean>} Promise resolving to true if initialization succeeded
+   */
+  async function initializeGame(isServerRestart = false) {
+    console.log(`Game Initializer: Forcing game initialization${isServerRestart ? ' after server restart' : ''}`);
+    
+    try {
+      // Reset any loading flags to prevent conflicts
+      resetGameLoaderFlags();
+      
+      // Determine which game to load
+      const gameType = determineGameToLoad();
+      console.log(`Game Initializer: Selected game to load: ${gameType}`);
+      
+      // If GameLoader doesn't exist, create it
+      if (!window.gameLoader) {
+        console.log('Game Initializer: Creating new GameLoader instance');
+        
+        if (typeof GameLoader === 'function') {
+          window.gameLoader = new GameLoader();
+          
+          // Wait for GameLoader to initialize its registry
+          console.log('Game Initializer: Waiting for GameLoader registry to initialize');
+          
+          await new Promise((resolve) => {
+            const waitForRegistry = async () => {
+              if (window.gameLoader && window.gameLoader.registry) {
+                try {
+                  // If GameRegistry is available but empty, wait for manifests
+                  if (Object.keys(window.gameLoader.gameRegistry).length === 0) {
+                    console.log('Game Initializer: Loading game manifests from registry');
+                    
+                    // Wait for registry to finish loading manifests with timeout
+                    const registryReady = await Promise.race([
+                      new Promise(manifestResolve => {
+                        const checkRegistry = () => {
+                          if (Object.keys(window.gameLoader.gameRegistry).length > 0) {
+                            manifestResolve(true);
+                          } else {
+                            setTimeout(checkRegistry, 100);
+                          }
+                        };
+                        checkRegistry();
+                      }),
+                      // Timeout after 3 seconds
+                      new Promise(timeoutResolve => setTimeout(() => {
+                        console.warn('Game Initializer: Timed out waiting for registry manifests');
+                        timeoutResolve(false);
+                      }, 3000))
+                    ]);
+                    
+                    if (registryReady) {
+                      console.log('Game Initializer: Game manifests loaded successfully');
+                    }
+                  }
+                  resolve();
+                } catch (error) {
+                  console.error('Game Initializer: Error loading game manifests:', error);
+                  resolve(); // Continue despite errors
+                }
+              } else {
+                setTimeout(waitForRegistry, 200);
+              }
+            };
+            
+            waitForRegistry();
+          });
+        } else {
+          console.error('Game Initializer: GameLoader constructor not available');
+          
+          // Try to load script explicitly if after server restart
+          if (isServerRestart) {
+            console.log('Game Initializer: Attempting to dynamically load gameLoader.js after server restart');
+            try {
+              await loadGameLoaderScript();
+              console.log('Game Initializer: GameLoader script loaded, retrying initialization');
+              // Retry initialization after loading the script
+              return initializeGame(true);
+            } catch (scriptError) {
+              console.error('Game Initializer: Failed to load GameLoader script:', scriptError);
+              return false;
+            }
+          }
+          return false;
+        }
+      }
+      
+      // Check for critical game classes if after server restart
+      if (isServerRestart && window.frameworkStarter && typeof window.frameworkStarter.checkClasses === 'function') {
+        console.log('Game Initializer: Checking required classes after server restart');
+        const classesAvailable = window.frameworkStarter.checkClasses();
+        if (!classesAvailable) {
+          console.error('Game Initializer: Required classes missing after server restart');
+          
+          // Report error but don't force reload here - more user-friendly
+          console.error('Game framework could not initialize properly after server restart');
+          return false;
+        }
+      }
+      
+      // Force create new game with a promise and timeout to prevent hanging
+      console.log(`Game Initializer: Creating new game instance: ${gameType}`);
+      
+      // Create a promise for game creation with timeout
+      const gameCreationPromise = new Promise((resolve, reject) => {
+        // Create game with a timeout
+        const timeoutId = setTimeout(() => {
+          console.error('Game Initializer: Game creation timed out');
+          resetGameLoaderFlags();
+          reject(new Error('Game creation timed out'));
+        }, CONFIG.ATTEMPT_TIMEOUT);
+        
+        try {
+          // Try multiple initialization approaches for robustness
+          
+          // Approach 1: Framework starter (if available)
+          if (window.frameworkStarter && typeof window.frameworkStarter.initGame === 'function') {
+            try {
+              console.log('Game Initializer: Using framework starter for initialization');
+              window.frameworkStarter.initGame();
+              
+              // Check if this was successful after a short delay
+              setTimeout(() => {
+                if (window.gameLoader && window.gameLoader.activeGame) {
+                  console.log('Game Initializer: Framework starter initialization successful');
+                  clearTimeout(timeoutId);
+                  resolve(true);
+                  return;
+                }
+                
+                // If not successful, continue to approach 2
+                console.log('Game Initializer: Framework starter initialization did not produce an active game, trying direct method');
+                tryDirectInitialization();
+              }, 300);
+            } catch (starterError) {
+              console.error('Game Initializer: Framework starter initialization failed:', starterError);
+              // Continue to approach 2
+              tryDirectInitialization();
+            }
+          } else {
+            // No framework starter, go directly to approach 2
+            tryDirectInitialization();
+          }
+          
+          // Approach 2: Direct GameLoader initialization
+          function tryDirectInitialization() {
+            if (!window.gameLoader.activeGame) {
+              console.log('Game Initializer: Direct GameLoader initialization');
+              
+              // Ensure forceCreateNewGame method exists
+              if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+                // Attempt to create game
+                window.gameLoader.forceCreateNewGame(gameType);
+                
+                // Wait to see if activeGame gets set
+                setTimeout(() => {
+                  clearTimeout(timeoutId);
+                  
+                  if (window.gameLoader.activeGame) {
+                    console.log('Game Initializer: Direct game initialization successful');
+                    resolve(true);
+                  } else {
+                    console.warn('Game Initializer: Direct game initialization did not produce active game');
+                    resolve(false); // Not a failure, but not successful either
+                  }
+                }, 500);
+              } else {
+                console.error('Game Initializer: GameLoader.forceCreateNewGame method not available');
+                clearTimeout(timeoutId);
+                reject(new Error('GameLoader.forceCreateNewGame method not available'));
+              }
+            } else {
+              // Game already active
+              console.log('Game Initializer: Game already active, no initialization needed');
+              clearTimeout(timeoutId);
+              resolve(true);
+            }
+          }
+        } catch (e) {
+          console.error('Game Initializer: Error during initialization approaches:', e);
+          clearTimeout(timeoutId);
+          reject(e);
+        }
+      });
+      
+      try {
+        // Wait for game creation with overall timeout
+        const gameCreated = await Promise.race([
+          gameCreationPromise,
+          new Promise((_, timeoutReject) => 
+            setTimeout(() => timeoutReject(new Error('Game initialization timed out')), 
+            CONFIG.ATTEMPT_TIMEOUT + 1000)
+          )
+        ]);
+        
+        // Additional safety measures for server restart
+        if (isServerRestart) {
+          console.log('Game Initializer: Performing additional safety checks after server restart');
+          
+          // Wait and check if initialization was successful
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          if (!isGameInitialized()) {
+            console.warn('Game Initializer: Game still not initialized after restart attempts');
+            
+            // One final attempt with default game type
+            console.log('Game Initializer: Final emergency attempt with default game');
+            if (window.gameLoader) {
+              // Reset everything
+              resetGameLoaderFlags();
+              if (window.gameLoader.activeGame) {
+                window.gameLoader.activeGame = null;
+              }
+              
+              // Try with explicit default type
+              if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+                window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+                
+                // Final check
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                const success = isGameInitialized();
+                if (success) {
+                  console.log('Game Initializer: Final emergency attempt successful');
+                } else {
+                  console.error('Game Initializer: Final emergency attempt failed');
+                }
+                return success;
+              }
+            }
+            return false;
+          }
+        }
+        
+        return !!gameCreated;
+      } catch (timeoutError) {
+        console.error('Game Initializer: Game creation failed:', timeoutError);
+        return false;
+      }
+      
+    } catch (e) {
+      console.error('Game Initializer: Fatal error forcing game initialization:', e);
+      return false;
+    }
+  }
+  
+  /**
+   * Dynamically load the GameLoader script with enhanced error handling
+   * Only used as a last resort after server restart
+   * @return {Promise<void>} Promise resolving when the script is loaded
+   */
+  async function loadGameLoaderScript() {
+    console.log('Game Initializer: Attempting to dynamically load GameLoader script');
+    
+    // Check if script is already loaded or being loaded
+    if (window.GameLoader || document.querySelector('script[src*="gameLoader.js"]')) {
+      console.log('Game Initializer: GameLoader script already loaded or loading');
+      
+      // If constructor exists, resolve immediately
+      if (window.GameLoader) {
+        return Promise.resolve();
+      }
+      
+      // Otherwise wait for a short time to see if it becomes available
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const checkForLoader = () => {
+          if (window.GameLoader) {
+            console.log('Game Initializer: GameLoader constructor became available');
+            resolve();
+          } else if (++attempts >= maxAttempts) {
+            reject(new Error('GameLoader constructor did not become available in time'));
+          } else {
+            setTimeout(checkForLoader, 100);
+          }
+        };
+        
+        checkForLoader();
+      });
+    }
+    
+    // Script not loaded yet, load it
+    return new Promise((resolve, reject) => {
+      try {
+        const script = document.createElement('script');
+        
+        // Enhanced error handling
+        script.onload = () => {
+          console.log('Game Initializer: GameLoader script loaded dynamically');
+          
+          // Additional check to ensure the constructor is available
+          if (window.GameLoader) {
+            resolve();
+          } else {
+            // Script loaded but constructor not available, wait a bit
+            setTimeout(() => {
+              if (window.GameLoader) {
+                resolve();
+              } else {
+                reject(new Error('GameLoader script loaded but constructor not available'));
+              }
+            }, 200);
+          }
+        };
+        
+        script.onerror = (event) => {
+          console.error('Game Initializer: Error loading GameLoader script:', event);
+          reject(new Error('Failed to load GameLoader script - network error'));
+        };
+        
+        // Enhanced timeout handling
+        const timeoutId = setTimeout(() => {
+          console.error('Game Initializer: Loading GameLoader script timed out');
+          reject(new Error('Failed to load GameLoader script - timeout'));
+        }, 5000);
+        
+        // Additional handlers to clear timeout
+        script.onload = () => {
+          clearTimeout(timeoutId);
+          console.log('Game Initializer: GameLoader script loaded dynamically');
+          
+          // Wait to ensure the constructor is available
+          setTimeout(() => {
+            if (window.GameLoader) {
+              resolve();
+            } else {
+              reject(new Error('GameLoader script loaded but constructor not available'));
+            }
+          }, 200);
+        };
+        
+        script.onerror = (event) => {
+          clearTimeout(timeoutId);
+          console.error('Game Initializer: Error loading GameLoader script:', event);
+          reject(new Error('Failed to load GameLoader script - network error'));
+        };
+        
+        // Set script attributes
+        script.async = true;
+        script.src = 'js/core/gameLoader.js';
+        
+        // Append to head
+        document.head.appendChild(script);
+        
+        console.log('Game Initializer: GameLoader script appended to document head');
+      } catch (creationError) {
+        console.error('Game Initializer: Error creating script element:', creationError);
+        reject(creationError);
+      }
+    });
+  }
+  
+  /**
+   * Reset all gameLoader flags
+   */
+  function resetGameLoaderFlags() {
+    if (!window.gameLoader) return;
+    
+    console.log('Game Initializer: Resetting GameLoader flags');
+    window.gameLoader._creatingGame = false;
+    window.gameLoader._loadingGame = false;
+    window.gameLoader._loadingGameTest = false;
+    window.gameLoader._loadingInProgress = null;
+    
+    // Reset any animation IDs for the active game
+    if (window.gameLoader.activeGame && window.gameLoader.activeGame.animationId) {
+      console.log('Game Initializer: Cancelling active animation frame');
+      cancelAnimationFrame(window.gameLoader.activeGame.animationId);
+      window.gameLoader.activeGame.animationId = null;
+    }
+  }
+  
+  /**
+   * Determine which game to load
+   * @returns {string} Game type to load
+   */
+  function determineGameToLoad() {
+    // First try to get value from selector
+    const gameSelector = document.getElementById('game-select');
+    if (gameSelector && gameSelector.value) {
+      return gameSelector.value;
+    }
+    
+    // If selector exists but has no value, get the first option
+    if (gameSelector && gameSelector.options && gameSelector.options.length > 0) {
+      return gameSelector.options[0].value;
+    }
+    
+    // Check if we have a registry with games
+    if (window.gameLoader && window.gameLoader.gameRegistry) {
+      const registryGames = Object.keys(window.gameLoader.gameRegistry);
+      if (registryGames.length > 0) {
+        console.log('Game Initializer: Using first game from registry:', registryGames[0]);
+        return registryGames[0];
+      }
+    }
+    
+    // Use default game as last resort
+    return CONFIG.DEFAULT_GAME;
+  }
+  
+  /**
+   * Final safety check to ensure game is initialized
+   * This runs once after all other mechanisms have had a chance to work
+   */
+  function finalSafetyCheck() {
+    console.log('Game Initializer: Running final safety check');
+    
+    // First try a lenient check for recovery scenarios
+    if (!isGameInitialized(true)) {
+      console.warn('Game Initializer: Final check - game still not initialized, forcing emergency initialization');
+      
+      // Clean up any previous initialization attempts
+      if (checkIntervalId) {
+        clearInterval(checkIntervalId);
+      }
+      
+      // Reset flags and force initialization
+      resetGameLoaderFlags();
+      
+      // Try to create a completely fresh game instance
+      try {
+        // Clean up any existing game instances and references
+        if (window.gameLoader) {
+          // Clear active game
+          if (window.gameLoader.activeGame) {
+            window.gameLoader.activeGame = null;
+          }
+          
+          // Clear existing game instances to force fresh creation
+          if (window.gameLoader.gameInstances) {
+            for (const gameType in window.gameLoader.gameInstances) {
+              delete window.gameLoader.gameInstances[gameType];
+            }
+          }
+          
+          // Fresh game instance with default game type
+          if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+            console.log(`Game Initializer: Last resort - creating ${CONFIG.DEFAULT_GAME} game`);
+            window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+            
+            // Schedule a verification check with longer delay
+            setTimeout(() => {
+              // Check DOM first - game canvas might not be ready yet
+              const gameCanvas = document.getElementById('game-canvas');
+              if (!gameCanvas) {
+                console.warn('Game Initializer: Game canvas element not found, cannot properly initialize game');
+              }
+                
+              // Try again with a more lenient check - just check if activeGame exists
+              if (window.gameLoader && !window.gameLoader.activeGame) {
+                console.error('Game Initializer: Final emergency attempt failed - no active game');
+                  
+                // Try framework starter as a last resort
+                if (window.frameworkStarter && typeof window.frameworkStarter.start === 'function') {
+                  console.log('Game Initializer: Attempting to use framework starter as final fallback');
+                  try {
+                    window.frameworkStarter.start();
+                      
+                    // Give it one more chance after framework starter
+                    setTimeout(() => {
+                      if (window.gameLoader && !window.gameLoader.activeGame) {
+                        // Really failed - show UI
+                        console.error('Game Initializer: Framework starter fallback also failed');
+                        showInitializationFailureUI();
+                      }
+                    }, 1000);
+                  } catch (e) {
+                    console.error('Game Initializer: Error in framework starter:', e);
+                    showInitializationFailureUI();
+                  }
+                } else {
+                  // No framework starter, show UI directly
+                  showInitializationFailureUI();
+                }
+              } else if (!isGameInitialized()) {
+                // Game exists but didn't pass full initialization check
+                console.warn('Game Initializer: Game exists but not fully initialized, attempting one more recovery');
+                  
+                // Try one more recovery for partial initialization
+                try {
+                  if (window.gameLoader && window.gameLoader.activeGame) {
+                    // Try to trigger a redraw or state update
+                    const framework = window.gameLoader.activeGame.framework || window.gameLoader.activeGame.game;
+                    if (framework) {
+                      if (typeof framework.redrawCanvas === 'function') {
+                        framework.redrawCanvas();
+                      } else if (typeof framework.drawCanvas === 'function') {
+                        framework.drawCanvas();
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.error('Game Initializer: Error in partial recovery:', e);
+                }
+              }
+            }, 1000);
+          }
+        } else {
+          console.error('Game Initializer: GameLoader not available during emergency initialization');
+          
+          // Try to recreate the GameLoader
+          if (typeof GameLoader === 'function') {
+            console.log('Game Initializer: Creating new GameLoader during emergency initialization');
+            window.gameLoader = new GameLoader();
+            
+            // Schedule a delayed initialization attempt
+            setTimeout(() => {
+              if (window.gameLoader && typeof window.gameLoader.forceCreateNewGame === 'function') {
+                window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+              }
+            }, 500);
+          }
+        }
+      } catch (e) {
+        console.error('Game Initializer: Fatal error during emergency initialization:', e);
+        showInitializationFailureUI();
+      }
+    } else {
+      console.log('Game Initializer: Final check - game is properly initialized');
+      
+      // Even if initialized, schedule a second verification check
+      // to ensure the game is still initialized after some time
+      setTimeout(() => {
+        if (!isGameInitialized()) {
+          console.warn('Game Initializer: Game initialization lost after initial success');
+          
+          // Attempt recovery
+          resetGameLoaderFlags();
+          if (window.gameLoader && typeof window.gameLoader.forceCreateNewGame === 'function') {
+            window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+          }
+        }
+      }, 3000);
+    }
+  }
+  
+  /**
+   * Show UI indication of initialization failure
+   * Creates a visible error indicator and manual recovery button
+   */
+  function showInitializationFailureUI() {
+    console.log('Game Initializer: Showing initialization failure UI');
+    
+    // Check if we already have a failure indicator
+    if (document.getElementById('game-init-failure')) {
+      return;
+    }
+    
+    try {
+      // Create failure indicator
+      const failureIndicator = document.createElement('div');
+      failureIndicator.id = 'game-init-failure';
+      failureIndicator.style.position = 'fixed';
+      failureIndicator.style.top = '50%';
+      failureIndicator.style.left = '50%';
+      failureIndicator.style.transform = 'translate(-50%, -50%)';
+      failureIndicator.style.backgroundColor = 'rgba(196, 40, 40, 0.9)';
+      failureIndicator.style.color = 'white';
+      failureIndicator.style.padding = '20px';
+      failureIndicator.style.borderRadius = '8px';
+      failureIndicator.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+      failureIndicator.style.zIndex = '9999';
+      failureIndicator.style.textAlign = 'center';
+      failureIndicator.style.maxWidth = '80%';
+      
+      // Failure message
+      failureIndicator.innerHTML = `
+        <h3 style="margin-top: 0;">Game Initialization Failed</h3>
+        <p>The game framework could not initialize properly after multiple attempts.</p>
+        <button id="game-init-retry" style="background: #50fa7b; color: #282a36; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px; font-weight: bold;">Retry Initialization</button>
+        <button id="game-init-reload" style="background: #6272a4; color: #f8f8f2; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Reload Page</button>
+      `;
+      
+      // Append to body
+      document.body.appendChild(failureIndicator);
+      
+      // Add event listeners
+      document.getElementById('game-init-retry').addEventListener('click', function() {
+        // Remove failure indicator
+        document.body.removeChild(failureIndicator);
+        
+        // Reset and retry
+        resetGameLoaderFlags();
+        if (window.gameLoader) {
+          if (window.gameLoader.activeGame) {
+            window.gameLoader.activeGame = null;
+          }
+          if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+            window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+          }
+        }
+        
+        // Also try framework starter
+        if (window.frameworkStarter && typeof window.frameworkStarter.start === 'function') {
+          window.frameworkStarter.start();
+        }
+      });
+      
+      document.getElementById('game-init-reload').addEventListener('click', function() {
+        window.location.reload();
+      });
+      
+    } catch (e) {
+      console.error('Game Initializer: Error creating failure UI:', e);
+    }
+  }
+  
+  // Start initialization after a short delay with proper async handling
+  setTimeout(() => {
+    ensureGameInitialized().then(success => {
+      console.log(`Game Initializer: Initial initialization ${success ? 'succeeded' : 'failed'}`);
+    }).catch(error => {
+      console.error('Game Initializer: Error during initial initialization:', error);
+    });
+  }, CONFIG.INITIAL_DELAY);
+  
+  // Also listen for DOM ready event as a backup trigger
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Game Initializer: DOM loaded event');
+    
+    // If initialization has not been successful yet, try again
+    if (!initialized && attempts < 2) {
+      console.log('Game Initializer: Attempting initialization on DOM loaded');
+      ensureGameInitialized().then(success => {
+        console.log(`Game Initializer: DOM ready initialization ${success ? 'succeeded' : 'failed'}`);
+      }).catch(error => {
+        console.error('Game Initializer: Error during DOM ready initialization:', error);
+      });
+    }
+  });
+  
+  // Expose initializer on window with enhanced restart detection and recovery
+  // and proper async support
+  window.gameInitializer = {
+    // Basic functions
+    checkStatus: isGameInitialized,
+    forceInitialize: async function(isServerRestart = false) {
+      return await initializeGame(isServerRestart);
+    },
+    resetFlags: resetGameLoaderFlags,
+    
+    // Async initializer
+    ensureInitialized: async function() {
+      return await ensureGameInitialized();
+    },
+    
+    // Server restart detection and recovery
+    detectRestart: detectServerRestart,
+    startRestartRecovery: startServerRestartRecovery,
+    
+    // Emergency recovery with async support
+    emergencyRecovery: async function() {
+      console.log('Game Initializer: Manual emergency recovery triggered');
+      
+      // Clean all state
+      resetGameLoaderFlags();
+      
+      // Reset GameLoader state
+      if (window.gameLoader) {
+        if (window.gameLoader.activeGame) {
+          window.gameLoader.activeGame = null;
+        }
+        
+        // Clear game instances
+        if (window.gameLoader.gameInstances) {
+          for (const gameType in window.gameLoader.gameInstances) {
+            delete window.gameLoader.gameInstances[gameType];
+          }
+        }
+      }
+      
+      // Track recovery attempts
+      let recoverySucceeded = false;
+      
+      // Add our own recovery flag to prevent infinite recovery loops
+    if (window._emergencyRecoveryInProgress) {
+      console.warn('Game Initializer: Emergency recovery already in progress, avoiding recursive call');
+      return {
+        success: false,
+        message: "Emergency recovery already in progress"
+      };
+    }
+    
+    // Set the flag to prevent recursive calls
+    window._emergencyRecoveryInProgress = true;
+    
+    // Set a global timeout to ensure the flag is cleared
+    setTimeout(() => {
+      window._emergencyRecoveryInProgress = false;
+      console.log('Game Initializer: Cleared emergency recovery flag after timeout');
+    }, 5000);
+    
+    // Try framework starter first (wrapped in promise)
+    if (window.frameworkStarter && typeof window.frameworkStarter.start === 'function') {
+      try {
+        console.log('Game Initializer: Emergency recovery - trying frameworkStarter.start()');
+        // Add a timeout to ensure this doesn't hang
+        const starterPromise = Promise.race([
+          Promise.resolve(window.frameworkStarter.start()),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Framework starter timed out')), 3000)
+          )
+        ]);
+        
+        try {
+          await starterPromise;
+          
+          // Check if successful
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (window.gameLoader && window.gameLoader.activeGame) {
+            console.log('Game Initializer: Emergency recovery with framework starter succeeded');
+            recoverySucceeded = true;
+            window._emergencyRecoveryInProgress = false;
+          }
+        } catch (timeoutError) {
+          console.warn('Game Initializer: Framework starter timed out:', timeoutError);
+        }
+      } catch (starterError) {
+        console.error('Game Initializer: Emergency recovery with framework starter failed:', starterError);
+      }
+    }
+      
+      // Then try direct game loader if first attempt failed
+      if (!recoverySucceeded && window.gameLoader) {
+        console.log('Game Initializer: Emergency recovery - trying direct gameLoader.forceCreateNewGame()');
+        try {
+          if (typeof window.gameLoader.forceCreateNewGame === 'function') {
+            window.gameLoader.forceCreateNewGame(CONFIG.DEFAULT_GAME);
+            
+            // Check if successful
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (window.gameLoader.activeGame) {
+              console.log('Game Initializer: Emergency recovery with direct game creation succeeded');
+              recoverySucceeded = true;
+            }
+          }
+        } catch (loaderError) {
+          console.error('Game Initializer: Emergency recovery with direct game creation failed:', loaderError);
+        }
+      }
+      
+      // Final attempt - try one more time with the full initialization function
+      if (!recoverySucceeded) {
+        console.log('Game Initializer: Emergency recovery - trying full initialization as last resort');
+        try {
+          recoverySucceeded = await initializeGame(true);
+        } catch (initError) {
+          console.error('Game Initializer: Emergency recovery with full initialization failed:', initError);
+        }
+      }
+      
+      return {
+        success: recoverySucceeded,
+        message: recoverySucceeded ? 
+          "Emergency recovery succeeded" : 
+          "Emergency recovery failed - consider page reload"
+      };
+    },
+    
+    // Manual reload if all else fails
+    forceReload: function() {
+      window.location.reload();
+    },
+    
+    // Status information
+    getStatus: function() {
+      return {
+        initialized,
+        attempts,
+        serverRestartDetected,
+        gamesAvailable: window.gameLoader ? 
+          Object.keys(window.gameLoader.gameRegistry || {}).length : 0,
+        activeGame: window.gameLoader?.activeGame ? 
+          window.gameLoader.getGameTypeFromInstance(window.gameLoader.activeGame) : null
+      };
+    }
+  };
+  
+  console.log('Game Initializer module loaded with server restart detection and recovery');
+})();

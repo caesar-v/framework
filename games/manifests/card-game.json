@@ -1,0 +1,29 @@
+{
+  "id": "card",
+  "version": "1.0.0",
+  "name": "Card Game",
+  "description": "A simple card game where players bet on high/low outcomes",
+  "author": "Framework Developer",
+  "main": "games/cardGame.js",
+  "thumbnail": "assets/images/games/card-thumbnail.png",
+  "category": "card",
+  "tags": ["card", "simple", "beginner"],
+  "dependencies": [],
+  "assets": [
+    "assets/images/cards/card-back.png",
+    "assets/images/cards/hearts-a.png",
+    "assets/images/cards/hearts-k.png",
+    "assets/images/cards/hearts-q.png",
+    "assets/images/cards/hearts-j.png",
+    "assets/images/cards/spades-a.png",
+    "assets/images/cards/spades-k.png",
+    "assets/images/cards/spades-q.png",
+    "assets/images/cards/spades-j.png"
+  ],
+  "config": {
+    "defaultRiskLevel": "medium",
+    "minBet": 5,
+    "maxBet": 1000,
+    "defaultBet": 20
+  }
+}
